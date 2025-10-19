@@ -1,5 +1,8 @@
 #include "ComGeo.h"
 #include "point.h"
+#include "NumberEntry.h"
+#include "utility.h"
+#include "2DGeomView.h"
 
 #include <QGraphicsScene>
 #include <QGraphicsItem>
@@ -14,8 +17,13 @@
 #include <QToolBar>
 #include <QWidget>
 #include <QDebug>
+#include <QFile>
+#include <QFileDialog>
+#include <QMessageBox>
 
-
+// TODO : implement convex hull algorithms
+// TODO : implement triangulation algorithms
+// TODO : implement voronoi algorithms
 
 ComGeo::ComGeo(QWidget *parent) : QMainWindow(parent), m_pScene(nullptr), m_bDrawAxis(false), m_bDrawGrid(false)
 {
@@ -49,7 +57,7 @@ void ComGeo::setupUI()
     horizontalLayout->setContentsMargins(11, 11, 11, 11);
     horizontalLayout->setObjectName(QString::fromUtf8("horizontalLayout"));
 
-    m_graphicsView = new QGraphicsView(centralWidget);
+    m_graphicsView = new /*QGraphicsView*/TwoDGeomView(centralWidget);
     m_graphicsView->setObjectName(QString::fromUtf8("graphicsView"));
 
     horizontalLayout->addWidget(m_graphicsView);
@@ -95,13 +103,17 @@ void ComGeo::setupActions()
     m_dataReadPtSet->setStatusTip("read point set from a file");
     connect(m_dataReadPtSet, &QAction::triggered, this, &ComGeo::onReadPtSet);
 
-    //m_dataRandomPoly = new QAction("Read Pt set", this);
+    //m_dataRandomPoly = new QAction("Random Polygon", this);
     //m_dataRandomPoly->setStatusTip("generate random polygon");
     //connect(m_dataRandomPoly, &QAction::triggered, this, &ComGeo::onRandomPoly);
 
-    m_dataReadPoly = new QAction("Read Pt set", this);
-    m_dataReadPoly->setStatusTip("generate random polygon");
+    m_dataReadPoly = new QAction("Read Polygon", this);
+    m_dataReadPoly->setStatusTip("read polygon info from file");
     connect(m_dataReadPoly, &QAction::triggered, this, &ComGeo::onReadPoly);
+
+    m_dataReadPolys = new QAction("Read multiple Polygons", this);
+    m_dataReadPolys->setStatusTip("read multiple polygons from file");
+    connect(m_dataReadPolys, &QAction::triggered, this, &ComGeo::onReadPolys);
 
     m_viewAxis = new QAction("view axis", this);
     m_viewAxis->setStatusTip("view coordiante axis");
@@ -144,6 +156,7 @@ void ComGeo::setupMenus()
     m_dataMenu->addAction(m_dataReadPtSet);
     //m_dataMenu->addAction(m_dataRandomPoly);
     m_dataMenu->addAction(m_dataReadPoly);
+    m_dataMenu->addAction(m_dataReadPolys);
 
     //m_dataMenu->addSeparator();
     //m_editMenu->addAction(m_editStep);
@@ -155,6 +168,8 @@ void ComGeo::setupMenus()
     m_viewMenu->addAction(m_viewGrid);
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_viewRefresh);
+
+    m_algoMenu = menuBar()->addMenu("Algorithms");
 
     m_helpMenu = menuBar()->addMenu("&Help");
     m_helpMenu->addAction(m_helpAbout);
@@ -183,30 +198,201 @@ void ComGeo::onRandomPtSet()
 { 
     clearData();
 
-    int cntPoints = 10;                // TODO: this should be configurable
-
-    //for (int ndx = 0; ndx < cntPoints; ndx++)
-    //{
-    //    CPoint*   pTemp = new CPoint(10 * ndx, 10 * ndx);
-    //    m_vecPointSet.push_back(pTemp);
-    //}
-
-
-    for (int ndx = 0; ndx < cntPoints; ndx++)
+    CNumberEntryDlg    dlg;
+    dlg.show();
+    if(QDialog::Accepted == dlg.exec())
     {
-        CPoint*    pTemp = new CPoint;
-        pTemp->random(m_graphicsView->width(), m_graphicsView->height());
+        int cntPoints = dlg.getNumber();                // TODO: this should be configurable
 
-        qDebug("adding (%d, %d) to vector", pTemp->getX(), pTemp->getY());
+        //for (int ndx = 0; ndx < cntPoints; ndx++)
+        //{
+        //    CPoint*   pTemp = new CPoint(10 * ndx, 10 * ndx);
+        //    m_vecPointSet.push_back(pTemp);
+        //}
 
-        m_vecPointSet.push_back(pTemp);
+        for (int ndx = 0; ndx < cntPoints; ndx++)
+        {
+            CPoint*    pTemp = new CPoint;
+            pTemp->random(m_graphicsView->width(), m_graphicsView->height());
+
+            qDebug("adding (%d, %d) to vector", pTemp->getX(), pTemp->getY());
+
+            m_vecPointSet.push_back(pTemp);
+        }
+
+        drawScene();  
     }
-
-    drawScene();  
 }
-void ComGeo::onReadPtSet() { qDebug("in onReadPtSet"); }
-void ComGeo::onRandomPoly() { qDebug("in onRandomPoly"); }
-void ComGeo::onReadPoly() { qDebug("in onReadPoly"); }
+
+
+
+void ComGeo::onReadPtSet() 
+{ 
+    QString   qstrFileName = "";
+    bool      ReadHeader = false;
+    int       dim = 0;
+    int       cnt = 0;
+
+
+    qstrFileName = QFileDialog::getOpenFileName(this, "Open Point Set", ".\\DataSets", "Data files(*.dat)::Text Files(*.txt)::All Files(*.*)");
+
+    if (qstrFileName != "")
+    {
+        clearData();
+        QFile   inFile(qstrFileName);
+        if (inFile.open(QIODevice::ReadOnly))
+        {
+            int          lineNbr = 0;
+            QTextStream  in(&inFile);
+
+            while (!in.atEnd())
+            {
+                ++lineNbr;
+                QString    qstrLine = in.readLine();
+
+                removeComments(&qstrLine);                         // remove comments, if any
+                qstrLine = qstrLine.simplified();                  // remove leading & trailing whitespace (and reduce internal sequences to a single space)
+
+                if (qstrLine.size() == 0)                          // we have an empty line continue
+                {
+                    continue;
+                }
+                else
+                {
+                    if (-1 != qstrLine.indexOf("header"))                               // look for `header' in line.
+                    {
+                        ReadHeader = processHeader(&qstrLine, "point", &dim, &cnt);     // flag to denote we've seen the header.
+                    }
+                    else                                                               // not a header line, error if we've not read the header...
+                    {
+                        QTextStream  lineIn(&qstrLine);
+                        int       ndx, xval, yval;
+
+                        if (!ReadHeader)
+                        {
+                            QMessageBox::critical(nullptr, "file format error", "header must prescede all data points");
+                            break;
+                        }
+
+                        lineIn >> ndx >> xval >> yval;
+                        if (QTextStream::Ok == lineIn.status())
+                        {
+                            CPoint*    pTemp = new CPoint(xval, yval);
+                            m_vecPointSet.push_back(pTemp);
+                        }
+                        else
+                        {
+                            QMessageBox::warning(nullptr, "warning", QString("failed to read line %1").arg(lineNbr));
+                        }
+
+                    }
+                }
+            }
+
+            if (m_vecPointSet.size() != cnt)
+            {
+                QMessageBox::warning(nullptr, "warning", "failed to read expected points");
+            }
+
+            //clearData();
+            drawScene();
+        }
+        else
+        {
+            QMessageBox::critical(nullptr, "error", inFile.errorString());
+        }
+    }
+}
+
+
+void ComGeo::onRandomPoly() 
+{ qDebug("not yet implemented"); }
+
+
+void ComGeo::onReadPoly() 
+{ 
+    QString   qstrFileName = "";
+    bool      ReadHeader = false;
+    int       dim = 0;
+    int       cnt = 0;
+
+
+    qstrFileName = QFileDialog::getOpenFileName(this, "Open Point Set", ".\\DataSets", "Data files(*.dat)::Text Files(*.txt)::All Files(*.*)");
+
+    if (qstrFileName != "")
+    {
+        clearData();
+        QFile   inFile(qstrFileName);
+        if (inFile.open(QIODevice::ReadOnly))
+        {
+            int          lineNbr = 0;
+            QTextStream  in(&inFile);
+
+            while (!in.atEnd())
+            {
+                ++lineNbr;
+                QString    qstrLine = in.readLine();
+
+                removeComments(&qstrLine);                         // remove comments, if any
+                qstrLine = qstrLine.simplified();                  // remove leading & trailing whitespace (and reduce internal sequences to a single space)
+
+                if (qstrLine.size() == 0)                          // we have an empty line continue
+                {
+                    continue;
+                }
+                else
+                {
+                    if (-1 != qstrLine.indexOf("header"))                               // look for `header' in line.
+                    {
+                        ReadHeader = processHeader(&qstrLine, "polygon", &dim, &cnt);     // flag to denote we've seen the header.
+                    }
+                    else                                                               // not a header line, error if we've not read the header...
+                    {
+                        QTextStream  lineIn(&qstrLine);
+                        int       ndx, xval, yval;
+
+                        if (!ReadHeader)
+                        {
+                            QMessageBox::critical(nullptr, "file format error", "header must prescede all data points");
+                            break;
+                        }
+
+                        lineIn >> ndx >> xval >> yval;
+                        if (QTextStream::Ok == lineIn.status())
+                        {
+                            CPoint*    pTemp = new CPoint(xval, yval);
+                            m_vecPointSet.push_back(pTemp);
+                        }
+                        else
+                        {
+                            QMessageBox::warning(nullptr, "warning", QString("failed to read line %1").arg(lineNbr));
+                        }
+
+                    }
+                }
+            }
+
+            if (m_vertexList.size() != cnt)
+            {
+                QMessageBox::warning(nullptr, "warning", "failed to read expected points");
+            }
+
+
+            drawScene();
+        }
+        else
+        {
+            QMessageBox::critical(nullptr, "error", inFile.errorString());
+        }
+    }
+}
+
+
+void ComGeo::onReadPolys()
+{
+
+
+}
 
 void ComGeo::onViewAxis() 
 { 
@@ -253,17 +439,19 @@ void ComGeo::clearData()
         m_vecPointSet.erase(m_vecPointSet.begin(), m_vecPointSet.end());
     }
         
-
     if (m_vertexList.size() > 0)
         m_vertexList.erase(m_vertexList.begin(), m_vertexList.end());
+
+    m_pScene->clear();
 }
 
 
 // TODO : need to adjust for aspect ratio so things look correct.
 void ComGeo::drawScene()
 {
-    static QPen  gridPen(QBrush(Qt::lightGray), 1, Qt::DotLine);
-    static QPen  axisPen(QBrush(Qt::black), 2, Qt::SolidLine);
+    static QPen  gridPen(QBrush(Qt::lightGray), 0, Qt::DotLine);
+    static QPen  axisPen(QBrush(Qt::black), 0, Qt::SolidLine);
+    static QPen  linePen(QBrush(Qt::black), 0, Qt::SolidLine);
 
     int windowWidth = m_graphicsView->width();
     int windowHeigth = m_graphicsView->height();
@@ -294,6 +482,7 @@ void ComGeo::drawScene()
         // draw the point set
         if (m_vecPointSet.size() > 0)
         {
+            float   delta = 1.000f;
             QVector<CPoint*>::Iterator     viter;
             viter = m_vecPointSet.begin();
 
@@ -301,10 +490,22 @@ void ComGeo::drawScene()
             {
                 int x = (*viter)->getX() + 0.5*windowWidth;
                 int y = -(*viter)->getY() + 0.5*windowHeigth;     // remember y increases from top right of window.
-
-                m_pScene->addEllipse(QRect(QPoint(x - 1, y - 1), QPoint(x + 1, y + 1)));
+                m_pScene->addEllipse(x - delta, y - delta, 2 * delta, 2 * delta, linePen, QBrush(Qt::SolidPattern));
 
                 viter++;
+            }
+        }
+
+        // draw polygon
+        int vextexCnt = m_vertexList.size();
+        if (vextexCnt > 0)
+        {
+            for (int ndx = 0; ndx < vextexCnt; ndx++)
+            {
+                CPoint* ptHead = m_vertexList.at(ndx);
+                CPoint* ptTail = m_vertexList.at((ndx + 1)%vextexCnt);
+
+                m_pScene->addLine(ptHead->getX() + 0.5*windowWidth, -ptHead->getY() + 0.5*windowHeigth, ptTail->getX() + 0.5*windowWidth, -ptTail->getY() + 0.5*windowHeigth, linePen);
             }
         }
         

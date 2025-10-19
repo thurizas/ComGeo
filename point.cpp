@@ -39,10 +39,7 @@ void CPoint::random(int nXMax, int nYMax)
 
     int x = distX(generator);
     int y = distY(generator);
-    // TODO : generate value in rane [0, nXMax]
     m_pData[0] = x - nXMax / 2;
-
-    // TODO : generate value in range [0, nYMax]
     m_pData[1] = y - nYMax / 2;
 
 }

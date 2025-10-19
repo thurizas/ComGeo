@@ -2,8 +2,9 @@
 
 #include <QtWidgets/QMainWindow>
 
-class QGraphicsView;
+//class QGraphicsView;
 class QGraphicsScene;
+class TwoDGeomView;
 class QMenu;
 class QAction;
 class CPoint;
@@ -25,6 +26,7 @@ private slots:
     void onReadPtSet();
     void onRandomPoly();
     void onReadPoly();
+    void onReadPolys();
     void onViewAxis();
     void onViewGrid();
     void onViewRefresh();
@@ -33,12 +35,13 @@ private slots:
 
 
 private:
-    QGraphicsView*  m_graphicsView;
+    TwoDGeomView*     m_graphicsView;
     QGraphicsScene* m_pScene;
 
     QMenu* m_fileMenu;
     QMenu* m_dataMenu;
     QMenu* m_viewMenu;
+    QMenu* m_algoMenu;
     QMenu* m_helpMenu;
 
     QAction* m_fileNew;
@@ -47,6 +50,7 @@ private:
     QAction* m_dataReadPtSet;
 //    QAction* m_dataRandomPoly;
     QAction* m_dataReadPoly;
+    QAction* m_dataReadPolys;
     QAction* m_viewAxis;
     QAction* m_viewGrid;
     QAction* m_viewRefresh;
