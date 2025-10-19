@@ -1,0 +1,18 @@
+ #
+ # This is used to test the orientation routing.  The first line contains
+ # the origin and destination of a line segment.  The next line contains
+ # the number of test points, and the next n_i lines contain the x and y
+ # cordinates for the test points.
+ #
+0 0 -100 -100
+10
+-101 -101
+-100 -100
+0 0
+-1 -1
+99 99
+100 100
+101 101
+-10000 -10000
+10000 10000
+10000 -10000 
