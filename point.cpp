@@ -2,46 +2,67 @@
 
 #include <random>
 
-CPoint::CPoint() : m_dim(0), m_pData(nullptr)
+CPoint::CPoint() : m_x(0), m_y(0)
 {
 
 }
 
-CPoint::CPoint(int x, int y, int dim) :  m_dim(dim), m_pData(new int[dim])
-{
-    m_pData[0] = x;
-    m_pData[1] = y;
-}
-
-CPoint::CPoint(int x, int y, int z, int dim) : m_dim(dim), m_pData(new int[dim])
-{
-    m_pData[0] = x;
-    m_pData[1] = y;
-    m_pData[2] = z;
-}
 
 
-CPoint::~CPoint()
-{
-    if (nullptr != m_pData)
-        delete[] m_pData;
-}
+CPoint::CPoint(float_t x, float_t y) :  m_x(x), m_y(y)
+{ }
+
+
 
 void CPoint::random(int nXMax, int nYMax)
 {
     std::random_device                 rand_dev;
     std::mt19937                       generator(rand_dev());
-    std::uniform_int_distribution<int> distX(0, nXMax);
-    std::uniform_int_distribution<int> distY(0, nYMax);
+    std::uniform_real_distribution<>   distX(0, nXMax);
+    std::uniform_real_distribution<>   distY(0, nYMax);
 
-    m_dim = 2;
-    m_pData = new int[2];
-
-    int x = distX(generator);
-    int y = distY(generator);
-    m_pData[0] = x - nXMax / 2;
-    m_pData[1] = y - nYMax / 2;
-
+    m_x = distX(generator);
+    m_y = distY(generator);
 }
 
+CPoint& CPoint::operator=(const CPoint& rhs)
+{
+  if (this != &rhs)               // check for self-assignment
+  {
+    this->m_x = rhs.m_x;
+    this->m_y = rhs.m_y;
+  }
 
+  return *this;
+}
+
+bool CPoint::operator==(const CPoint& other)
+{
+  bool bRet = false;
+
+  if ((fabs(this->m_x - other.m_x) < FLT_EPSILON) && (fabs(this->m_y - other.m_y) < FLT_EPSILON))
+    bRet = true;
+
+  return bRet;
+}
+
+bool CPoint::operator!=(const CPoint& other)
+{
+  return !(*this == other);
+}
+
+bool CPoint::operator<(const CPoint& other)
+{
+  bool ret = false;
+
+  if (this->x() < const_cast<CPoint&>(other).x()) ret =  true;
+  else
+  {
+    if (fabs(this->x() - const_cast<CPoint&>(other).x()) < FLT_EPSILON)            // x-coordinates are equal
+    {
+      if (this->y() < const_cast<CPoint&>(other).y()) ret = true;
+    }
+  }
+
+  return ret;
+}

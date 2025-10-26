@@ -10,7 +10,7 @@ TwoDGeomView::TwoDGeomView(QWidget *parent) : QGraphicsView(parent)
 
 void TwoDGeomView::wheelEvent(QWheelEvent *event)
 {
-    if (event->delta() > 0)
+    if (event->angleDelta().y() > 0)
         scale(1.25, 1.25);
     else
         scale(0.8, 0.8);

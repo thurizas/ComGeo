@@ -1,8 +1,12 @@
+#include "logger.h"
+
 #include "ComGeo.h"
 #include "point.h"
 #include "NumberEntry.h"
 #include "utility.h"
 #include "2DGeomView.h"
+#include "dlgViewData.h"
+#include "convexHull.h"
 
 #include <QGraphicsScene>
 #include <QGraphicsItem>
@@ -21,13 +25,16 @@
 #include <QFileDialog>
 #include <QMessageBox>
 
+#include <iostream>
+
+static const float_t scale = 10.0f;            // one unit = 10 pixels.
+
 // TODO : implement convex hull algorithms
 // TODO : implement triangulation algorithms
 // TODO : implement voronoi algorithms
 
 ComGeo::ComGeo(QWidget *parent) : QMainWindow(parent), m_pScene(nullptr), m_bDrawAxis(false), m_bDrawGrid(false)
 {
-    //ui.setupUi(this);
     setupUI();
     setupActions();
     setupMenus();
@@ -127,9 +134,34 @@ void ComGeo::setupActions()
     m_viewGrid->setChecked(m_bDrawGrid);
     connect(m_viewGrid, &QAction::triggered, this, &ComGeo::onViewGrid);
 
+    m_viewPointDataset = new QAction("view point set", this);
+    m_viewPointDataset->setStatusTip("view point data set");
+    connect(m_viewPointDataset, &QAction::triggered, this, std::bind(&ComGeo::onViewDataSet, this, ComGeo::DATA::POINT));
+
+    m_viewLineDataset = new QAction("view line set", this);
+    m_viewLineDataset->setStatusTip("view line data set");
+    connect(m_viewLineDataset, &QAction::triggered, this, std::bind(&ComGeo::onViewDataSet, this, ComGeo::DATA::LINE));
+    
+    m_viewPolygonDataset = new QAction("view polygon set", this);
+    m_viewPolygonDataset->setStatusTip("view polygon data set");
+    connect(m_viewPolygonDataset, &QAction::triggered, this, std::bind(&ComGeo::onViewDataSet, this, ComGeo::DATA::POLYGON));
+
     m_viewRefresh = new QAction("refresh", this);
     m_viewRefresh->setStatusTip("Refresh the view");
     connect(m_viewRefresh, &QAction::triggered, this, &ComGeo::onViewRefresh);
+
+    m_algoJarvisMarch= new QAction("Jarvis March",this);
+    m_algoJarvisMarch->setStatusTip("calculate convex hull by Jarvis March");
+    connect(m_algoJarvisMarch, &QAction::triggered, this, &ComGeo::onAlgoJarvisMarch);
+
+    m_algoGrahamScan = new QAction("Graham Scan",this);
+    m_algoGrahamScan->setStatusTip("calculate convex hull by Jarvis March");
+    connect(m_algoGrahamScan, &QAction::triggered, this, &ComGeo::onAlgoGrahamScan);
+
+    m_algoMergeHull  = new QAction("Merge Hull",this);
+    m_algoMergeHull->setStatusTip("calculate convex hull by Jarvis March");
+    connect(m_algoMergeHull, &QAction::triggered, this, &ComGeo::onAlgoMergeHull);
+
 
     m_helpAbout = new QAction("About", this);
     //m_HelpAbout->setShortcuts(QKeySequence::About);
@@ -167,9 +199,20 @@ void ComGeo::setupMenus()
     m_viewMenu->addAction(m_viewAxis);
     m_viewMenu->addAction(m_viewGrid);
     m_viewMenu->addSeparator();
+    QMenu* viewData =  m_viewMenu->addMenu("View Data Set");
+    viewData->addAction(m_viewPointDataset);
+    viewData->addAction(m_viewLineDataset);
+    viewData->addAction(m_viewPolygonDataset);
+
     m_viewMenu->addAction(m_viewRefresh);
 
     m_algoMenu = menuBar()->addMenu("Algorithms");
+    QMenu* chAlgos = m_algoMenu->addMenu("Convex Hull");
+    chAlgos->addAction(m_algoJarvisMarch);
+    chAlgos->addAction(m_algoGrahamScan);
+    chAlgos->addAction(m_algoMergeHull);
+    QMenu* triAlgo = m_algoMenu->addMenu("Triangulation");
+    QMenu* vcAlgo = m_algoMenu->addMenu("Voronoi Cells");
 
     m_helpMenu = menuBar()->addMenu("&Help");
     m_helpMenu->addAction(m_helpAbout);
@@ -202,7 +245,7 @@ void ComGeo::onRandomPtSet()
     dlg.show();
     if(QDialog::Accepted == dlg.exec())
     {
-        int cntPoints = dlg.getNumber();                // TODO: this should be configurable
+        int cntPoints = dlg.getNumber();                
 
         //for (int ndx = 0; ndx < cntPoints; ndx++)
         //{
@@ -215,7 +258,7 @@ void ComGeo::onRandomPtSet()
             CPoint*    pTemp = new CPoint;
             pTemp->random(m_graphicsView->width(), m_graphicsView->height());
 
-            qDebug("adding (%d, %d) to vector", pTemp->getX(), pTemp->getY());
+            qDebug("adding (%d, %d) to vector", pTemp->x(), pTemp->y());
 
             m_vecPointSet.push_back(pTemp);
         }
@@ -410,6 +453,13 @@ void ComGeo::onViewGrid()
     drawScene();
 }
 
+void ComGeo::onViewDataSet(uint8_t dataType)
+{
+  dlgViewData dlg(dataType, &m_vecPointSet);
+  dlg.show();
+  uint32_t ret = dlg.exec();
+}
+
 
 
 void ComGeo::onViewRefresh()
@@ -417,6 +467,30 @@ void ComGeo::onViewRefresh()
     drawScene();
 }
 
+
+void ComGeo::onAlgoJarvisMarch()
+{
+  std::cout << "in function: " << __FUNCTION__ << "File: " << __FILE__ << " (" << __LINE__ << ")" << std::endl;
+  if (m_vecPointSet.size() > 0)
+  {
+    convexHull  ch(&m_vecPointSet);
+    ch.jervisMarch();
+  }
+  else
+  {
+    QMessageBox::warning(this, "no data", "no point set - please generate a random point set, or read in a point set");
+  }
+}
+
+void ComGeo::onAlgoGrahamScan()
+{
+  std::cout << "in function: " << __FUNCTION__ << "File: " << __FILE__ << " (" << __LINE__ << ")" << std::endl;
+}
+
+void ComGeo::onAlgoMergeHull()
+{
+  std::cout << "in function: " << __FUNCTION__ << "File: " << __FILE__ << " (" << __LINE__ << ")" << std::endl;
+}
 
 
 void ComGeo::onAbout() { qDebug("in onAbout"); }
@@ -482,15 +556,15 @@ void ComGeo::drawScene()
         // draw the point set
         if (m_vecPointSet.size() > 0)
         {
-            float   delta = 1.000f;
+            float   delta = 0.500f;
             QVector<CPoint*>::Iterator     viter;
             viter = m_vecPointSet.begin();
 
             while (m_vecPointSet.end() != viter)
             {
-                int x = (*viter)->getX() + 0.5*windowWidth;
-                int y = -(*viter)->getY() + 0.5*windowHeigth;     // remember y increases from top right of window.
-                m_pScene->addEllipse(x - delta, y - delta, 2 * delta, 2 * delta, linePen, QBrush(Qt::SolidPattern));
+                float_t x = ((*viter)->x())*scale + 0.5f*windowWidth;
+                float_t y = -((*viter)->y())*scale + 0.5f*windowHeigth;     // remember y increases from top right of window.
+                m_pScene->addEllipse((x - delta), (y - delta) , (2 * delta) , (2 * delta) , linePen, QBrush(Qt::SolidPattern));
 
                 viter++;
             }
@@ -505,7 +579,7 @@ void ComGeo::drawScene()
                 CPoint* ptHead = m_vertexList.at(ndx);
                 CPoint* ptTail = m_vertexList.at((ndx + 1)%vextexCnt);
 
-                m_pScene->addLine(ptHead->getX() + 0.5*windowWidth, -ptHead->getY() + 0.5*windowHeigth, ptTail->getX() + 0.5*windowWidth, -ptTail->getY() + 0.5*windowHeigth, linePen);
+                m_pScene->addLine(ptHead->x() + 0.5*windowWidth, -ptHead->y() + 0.5*windowHeigth, ptTail->x() + 0.5*windowWidth, -ptTail->y() + 0.5*windowHeigth, linePen);
             }
         }
         
