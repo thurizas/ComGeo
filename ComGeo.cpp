@@ -470,11 +470,12 @@ void ComGeo::onViewRefresh()
 
 void ComGeo::onAlgoJarvisMarch()
 {
-  std::cout << "in function: " << __FUNCTION__ << "File: " << __FILE__ << " (" << __LINE__ << ")" << std::endl;
   if (m_vecPointSet.size() > 0)
   {
+    QVector<edge*> edgeList;
     convexHull  ch(&m_vecPointSet);
-    ch.jervisMarch();
+    m_vertexList = ch.jervisMarch();
+    drawScene();
   }
   else
   {
@@ -576,10 +577,10 @@ void ComGeo::drawScene()
         {
             for (int ndx = 0; ndx < vextexCnt; ndx++)
             {
-                CPoint* ptHead = m_vertexList.at(ndx);
-                CPoint* ptTail = m_vertexList.at((ndx + 1)%vextexCnt);
+                CPoint ptHead = m_vertexList.at(ndx);
+                CPoint ptTail = m_vertexList.at((ndx + 1)%vextexCnt);
 
-                m_pScene->addLine(ptHead->x() + 0.5*windowWidth, -ptHead->y() + 0.5*windowHeigth, ptTail->x() + 0.5*windowWidth, -ptTail->y() + 0.5*windowHeigth, linePen);
+                m_pScene->addLine(ptHead.x() * scale + 0.5*windowWidth, -ptHead.y() * scale + 0.5*windowHeigth, ptTail.x() * scale + 0.5*windowWidth, -ptTail.y() * scale + 0.5*windowHeigth, linePen);
             }
         }
         

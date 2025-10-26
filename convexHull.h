@@ -15,10 +15,11 @@ public:
 
   ~convexHull();
 
-  QVector<edge*>* jervisMarch();
+  QVector<CPoint> jervisMarch();
 
 private:
-  QVector<edge*>*    m_hull;
+  //QVector<edge*>     m_hull;
+  //QVector<CPoint>    m_hull;
   QVector<CPoint>    m_pts;
 };
 

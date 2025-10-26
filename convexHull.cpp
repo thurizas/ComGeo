@@ -3,12 +3,12 @@
 
 #include <iostream>
 
-convexHull::convexHull() : m_hull(nullptr)
+convexHull::convexHull() 
 {
 
 }
 
-convexHull::convexHull(QVector<CPoint*>* pts) : m_hull(nullptr)
+convexHull::convexHull(QVector<CPoint*>* pts) 
 {
   for (CPoint* pt : *pts)
   {
@@ -48,18 +48,14 @@ convexHull::~convexHull()
 //
 // Written : Oct 2025 (gkhuber)*
 //*********************************************************************************************************************
-QVector<edge*>* convexHull::jervisMarch()
+QVector<CPoint> convexHull::jervisMarch()
 {  
   QVector<CPoint>        hull;
   int                    leftNdx = 0;                           // index of left-most vertex
 
   int32_t cntPts = m_pts.size();                                // number of points in the set
 
-  if (cntPts < 3)                                               // must have at least three points
-  {
-    return nullptr;
-  }
-  else
+  if (cntPts >= 3)                                              // must have at least three points
   {
     for (int i = 1; i < cntPts; i++)                            // find left most point
     {
@@ -90,11 +86,12 @@ QVector<edge*>* convexHull::jervisMarch()
 
     for (CPoint& pt : hull)
     {
-      // (-5, -1), (-3, -2), (1, -2), (3, -2), (5, 1), (7, 4), (6, 5), (3, 5), (2, 5), (0, 5), (-3, 4), (-5, 2), (-5, 1), (-5, -1),
+      // correct: (-5, -1), (-3, -2), (1, -2), (3, -2), (5, 1), (7, 4), (6, 5), (3, 5), (2, 5), (0, 5), (-3, 4), (-5, 2), (-5, 1), (-5, -1),
+      // result : (-5, -1), (-3, -2), (1, -2), (3, -2), (5, 1), (7, 4), (6, 5), (3, 5), (2, 5), (0, 5), (-3, 4), (-5, 2),          (-5, -1),
       std::cout << "(" << pt.x() << ", " << pt.y() << "), ";
     }
   }
 
-  return nullptr;
+  return hull;
 
 }

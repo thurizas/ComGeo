@@ -7,14 +7,17 @@ class edge
 {
 public:
   edge();
-  edge(CPoint, CPoint);
+  edge(CPoint o, CPoint d) : m_org(o), m_dest(d) {}
   edge(const edge&);
 
-  ~edge();
+  ~edge() { }
+
+  CPoint org() { return m_org; }
+  CPoint dst() { return m_dest; }
 
 private:
-  CPoint  org;
-  CPoint  dest;
+  CPoint  m_org;
+  CPoint  m_dest;
 };
 
 #endif

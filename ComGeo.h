@@ -2,12 +2,13 @@
 
 #include <QtWidgets/QMainWindow>
 
+#include "point.h"
+
 //class QGraphicsView;
 class QGraphicsScene;
 class TwoDGeomView;
 class QMenu;
 class QAction;
-class CPoint;
 
 class ComGeo : public QMainWindow
 {
@@ -71,7 +72,7 @@ private:
     QAction* m_helpHelp;
 
     QVector<CPoint*>    m_vecPointSet;
-    QVector<CPoint*>    m_vertexList;
+    QVector<CPoint>    m_vertexList;
 
     bool               m_bDrawAxis;
     bool               m_bDrawGrid;
