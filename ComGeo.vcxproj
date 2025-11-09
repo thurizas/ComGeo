@@ -149,6 +149,9 @@
     <QtMoc Include="dlgViewData.h" />
     <ClInclude Include="convexHull.h" />
     <ClInclude Include="edge.h" />
+    <ClInclude Include="GeneratedFiles\ui_ComGeo.h" />
+    <ClInclude Include="GeneratedFiles\ui_NbrNodeInput.h" />
+    <ClInclude Include="GeneratedFiles\ui_ViewDataSet.h" />
     <ClInclude Include="XGetopt.h" />
     <QtMoc Include="2DGeomView.h" />
     <ClInclude Include="console.h" />

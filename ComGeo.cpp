@@ -236,7 +236,18 @@ void ComGeo::onExit()
 }
 
 
-
+/**********************************************************************************************************************
+ * Function: 
+ *
+ * Abstract:
+ *
+ * Input   :
+ *
+ * Returns :
+ *
+ * Written : Aug 2019 (gkhuber)
+ *           Nov 2025 - added support for floating point representations of points.
+ *********************************************************************************************************************/
 void ComGeo::onRandomPtSet() 
 { 
     clearData();
@@ -245,22 +256,40 @@ void ComGeo::onRandomPtSet()
     dlg.show();
     if(QDialog::Accepted == dlg.exec())
     {
-        int cntPoints = dlg.getNumber();                
+        int32_t cntPoints = dlg.getNumber();  
+        int32_t minX = dlg.minX();
+        int32_t minY = dlg.minY();
+        int32_t maxX = dlg.maxX();
+        int32_t maxY = dlg.maxY();
 
-        //for (int ndx = 0; ndx < cntPoints; ndx++)
-        //{
-        //    CPoint*   pTemp = new CPoint(10 * ndx, 10 * ndx);
-        //    m_vecPointSet.push_back(pTemp);
-        //}
+        bool    useReals = dlg.useReals();
 
         for (int ndx = 0; ndx < cntPoints; ndx++)
         {
             CPoint*    pTemp = new CPoint;
-            pTemp->random(m_graphicsView->width(), m_graphicsView->height());
+            bool       collision = false;
 
-            qDebug("adding (%d, %d) to vector", pTemp->x(), pTemp->y());
+            if (useReals) pTemp->randomFloatPoint(minX, maxX, minY, maxY);
+            else          pTemp->randomIntPoint(minX, maxX, minY, maxY);
 
-            m_vecPointSet.push_back(pTemp);
+         
+            for (CPoint* ppt : m_vecPointSet)
+            {
+              if (*ppt == *pTemp)
+              {collision = true;
+                break;
+              }
+            }
+
+            if (!collision)
+            {
+              m_vecPointSet.push_back(pTemp);
+            }
+        }
+
+        if (cntPoints != m_vecPointSet.size())
+        {
+          QMessageBox::information(this, "point set size", QString("failed to generate %1 unique point").arg(cntPoints));
         }
 
         drawScene();  

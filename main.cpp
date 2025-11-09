@@ -5,6 +5,19 @@
 #include "ComGeo.h"
 #include <QtWidgets/QApplication>
 
+
+/**********************************************************************************************************************
+ * Function: main
+ *
+ * Abstract:
+ *
+ * Input   :
+ *
+ * Returns :
+ *
+ * Written : Aug 2019 (gkhuber)
+ *           Nov 2025 - added support for logger functionality.
+ *********************************************************************************************************************/
 int main(int argc, char *argv[])
 {
   uint32_t nRet;

@@ -14,11 +14,13 @@ public:
   ~dlgViewData();
 
 private slots:
+  void onExport();
   void onAccept();
   void onReject();
 
 private:
   void setupUI();
+  void exportPointSet(QTextStream* pout);
 
   uint8_t  m_dataType;
   uint8_t  m_dimens;

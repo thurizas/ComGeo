@@ -1,18 +1,13 @@
-/********************************************************************************
-** Form generated from reading UI file 'NbrNodeInput.ui'
-**
-** Created by: Qt User Interface Compiler version 5.12.3
-**
-** WARNING! All changes made in this file will be lost when recompiling UI file!
-********************************************************************************/
 
-#ifndef UI_NBRNODEINPUT_H
-#define UI_NBRNODEINPUT_H
+#ifndef _numberentry_h_
+#define _numberentry_h_
 
 #include <QDialog>
 
+
 class QPushButton;
 class QLineEdit;
+class QCheckBox;
 
 class CNumberEntryDlg : public QDialog
 {
@@ -23,20 +18,35 @@ public:
 
     void setupUI();
 
-    void setNumber(int n) { m_nNbr = n; }
-    int  getNumber() { return m_nNbr; }
+    void    setNumber(int32_t n) { m_nNbr = n; }
+    int32_t getNumber() { return m_nNbr; }
+    float_t minX() { return m_minX; }
+    float_t minY() { return m_minY; }
+    float_t maxX() { return m_maxX; }
+    float_t maxY() { return m_maxY; }
+    bool    useReals();
+
 
 private slots:
     void OnOK();
     void OnCancel();
-
+    
 private:
 
     QPushButton* m_btnCancel;
     QPushButton* m_btnOK;
-    QLineEdit*   m_edtEntry;
+    QLineEdit*   m_edtNbrGenerate;
+    QLineEdit*   m_xRange;
+    QLineEdit*   m_yRange;
+    QCheckBox*   m_chkFloat;
+    int          m_nNbr;
+    float_t      m_minX;
+    float_t      m_maxX;
+    float_t      m_minY;
+    float_t      m_maxY;
+    bool         m_useFloat;
 
-    int           m_nNbr;
+    bool parseRangeDescription(QString range, float_t* min, float_t* max);
 
 };
 

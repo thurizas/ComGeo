@@ -13,9 +13,11 @@ public:
     float_t x() { return m_x; }
     float_t y() { return m_y; }
 
-    void random(int, int);
+    void randomIntPoint(int, int, int, int);
+    void randomFloatPoint(float_t, float_t, float_t, float_t);
 
     bool operator==(const CPoint& other);
+    bool operator==(const CPoint* other);
     bool operator!=(const CPoint& other);
     bool operator<(const CPoint& other);
 

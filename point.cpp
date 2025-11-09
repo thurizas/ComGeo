@@ -13,16 +13,38 @@ CPoint::CPoint(float_t x, float_t y) :  m_x(x), m_y(y)
 { }
 
 
-
-void CPoint::random(int nXMax, int nYMax)
+/**********************************************************************************************************************
+ * Function: randomIntPoint
+ *
+ * Abstract:
+ *
+ * Input   :
+ *
+ * Returns :
+ *
+ * Written : Aug 2019 (gkhuber)
+ *           Nov 2025 - name changed to 'randomIntPoint' from 'random'.
+ *********************************************************************************************************************/
+void CPoint::randomIntPoint(int xmin, int xmax, int ymin, int ymax)
 {
     std::random_device                 rand_dev;
     std::mt19937                       generator(rand_dev());
-    std::uniform_real_distribution<>   distX(0, nXMax);
-    std::uniform_real_distribution<>   distY(0, nYMax);
+    std::uniform_int_distribution<>   distX(xmin, xmax);
+    std::uniform_int_distribution<>   distY(ymin, ymax);
 
     m_x = distX(generator);
     m_y = distY(generator);
+}
+
+void CPoint::randomFloatPoint(float_t xmin, float_t xmax, float_t ymin, float_t ymax)
+{
+  std::random_device                    rand_dev;
+  std::mt19937                          generator(rand_dev());
+  std::uniform_real_distribution<>      distX(xmin, xmax);
+  std::uniform_real_distribution<>      distY(ymin, ymax);
+
+  m_x = distX(generator);
+  m_y = distY(generator);
 }
 
 CPoint& CPoint::operator=(const CPoint& rhs)
@@ -41,6 +63,16 @@ bool CPoint::operator==(const CPoint& other)
   bool bRet = false;
 
   if ((fabs(this->m_x - other.m_x) < FLT_EPSILON) && (fabs(this->m_y - other.m_y) < FLT_EPSILON))
+    bRet = true;
+
+  return bRet;
+}
+
+bool CPoint::operator==(const CPoint* other)
+{
+  bool bRet = false;
+
+  if ((fabs(this->m_x - other->m_x) < FLT_EPSILON) && (fabs(this->m_y - other->m_y) < FLT_EPSILON))
     bRet = true;
 
   return bRet;

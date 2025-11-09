@@ -7,6 +7,9 @@
 #include <QSpacerItem>
 #include <QPushButton>
 #include <QTableWidget> 
+#include <QFileDialog>
+#include <QDir>
+#include <QMessageBox>
 
 
 dlgViewData::dlgViewData(uint8_t dt, QVector<CPoint*>* vertexList, QWidget* p) : QDialog(p), m_dataType(dt), m_dimens(2), m_pVertices(vertexList)
@@ -41,12 +44,16 @@ void dlgViewData::setupUI()
 
   QSpacerItem* spacerItem = new QSpacerItem(131, 31, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
+  QPushButton* btnExport = new QPushButton("Export");
+  btnExport->setObjectName("ExportButton");
+
   QPushButton* btnOK = new QPushButton("OK");
   btnOK->setObjectName("okButton");
 
   QPushButton* btnCancel = new QPushButton("Cancel");
   btnCancel->setObjectName("cancelButton");
   
+  btnBox->addWidget(btnExport);
   btnBox->addItem(spacerItem);
   btnBox->addWidget(btnOK);
   btnBox->addWidget(btnCancel);
@@ -72,8 +79,6 @@ void dlgViewData::setupUI()
         tblData->setItem(row, 1, new QTableWidgetItem(QString("%1").arg(pPoint->y())));
       }
     }
-
-
   }
   else if (m_dataType == ComGeo::DATA::LINE)
   {
@@ -88,14 +93,60 @@ void dlgViewData::setupUI()
     CLogger::getInstance()->outMsg(cmdLine, CLogger::level::WARNING, "Unknown type %d", static_cast<uint32_t>(m_dataType));
   }
 
-
-
-
   layoutWidget->addWidget(tblData);
   layoutWidget->addLayout(btnBox);
 
+  connect(btnExport, &QPushButton::clicked, this, &dlgViewData::onExport);
   connect(btnOK, &QPushButton::clicked, this, &dlgViewData::onAccept);
   connect(btnCancel, &QPushButton::clicked, this, &dlgViewData::onReject);
+}
+
+void dlgViewData::onExport()
+{
+  QDate curDate = QDate::currentDate();
+
+
+  // TODO : get the file name
+  QString outFileName = QFileDialog::getSaveFileName(nullptr, "Export file name", QDir::currentPath(), "Data files (*.dat);;All Files (*.*)", new QString("Data file (*.dat)"));
+  
+  // TODO : open/create the file name
+  QFile outFile(outFileName, nullptr);
+  if (!outFile.open(QIODevice::ReadWrite | QIODevice::Text | QIODevice::Truncate))
+  {
+    QString errStr = outFile.errorString();
+    QMessageBox::warning(this, "IO Error", QString("could not open %1 for writting\nError %2").arg(outFileName).arg(errStr));
+  }
+  else
+  {
+    QTextStream out(&outFile);// TODO : setup an input stream
+ 
+    switch (m_dataType)
+    {
+      case ComGeo::DATA::POINT:
+
+        out << "#\n";
+        out << QString("# exported point set, exported on %1%2%3\n").arg(curDate.year()).arg(curDate.month()).arg(curDate.day());;
+        out << QString("# %1 point-set \n").arg(m_pVertices->size());
+        out << "\n";
+        out << "header point " << m_pVertices->size() << " 2\n";  
+
+        exportPointSet(&out);
+
+        break;
+      case ComGeo::DATA::LINE:
+
+        break;
+
+      case ComGeo::DATA::POLYGON:
+
+        break;
+
+      default:
+        CLogger::getInstance()->outMsg(cmdLine, CLogger::level::WARNING, "%d is an unknown data type", m_dataType);
+    } 
+    
+    outFile.close();
+  }
 }
 
 void dlgViewData::onAccept()
@@ -106,4 +157,24 @@ void dlgViewData::onAccept()
 void dlgViewData::onReject()
 {
   QDialog::reject();
+}
+
+/*
+ #
+ # file for point set 1, from  Computational Geometry in C, pg 85
+ #
+ # this point set is for a 2D-point space columns are index, x-coordinate
+ # and the ny-coordinate.  First line gives number of points and dimensions
+header point 19  2
+ 0  3  3     # first point
+*/
+void dlgViewData::exportPointSet(QTextStream* pout)
+{
+  uint32_t ndx = 0;
+  for(CPoint* ppt : *m_pVertices)
+  { 
+    *pout << ndx << " " << ppt->x() << " " << ppt->y() << "\n";
+    ndx++;
+  }
+
 }
