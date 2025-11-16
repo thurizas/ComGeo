@@ -338,7 +338,8 @@ void ComGeo::onReadPtSet()
                     else                                                               // not a header line, error if we've not read the header...
                     {
                         QTextStream  lineIn(&qstrLine);
-                        int       ndx, xval, yval;
+                        int       ndx;
+                        float_t   xval, yval;
 
                         if (!ReadHeader)
                         {
@@ -349,7 +350,7 @@ void ComGeo::onReadPtSet()
                         lineIn >> ndx >> xval >> yval;
                         if (QTextStream::Ok == lineIn.status())
                         {
-                            CPoint*    pTemp = new CPoint(xval, yval);
+                            CPoint*    pTemp = new CPoint(ndx, xval, yval);
                             m_vecPointSet.push_back(pTemp);
                         }
                         else
@@ -416,9 +417,9 @@ void ComGeo::onReadPoly()
                 {
                     if (-1 != qstrLine.indexOf("header"))                               // look for `header' in line.
                     {
-                        ReadHeader = processHeader(&qstrLine, "polygon", &dim, &cnt);     // flag to denote we've seen the header.
+                        ReadHeader = processHeader(&qstrLine, "polygon", &dim, &cnt);   // flag to denote we've seen the header.
                     }
-                    else                                                               // not a header line, error if we've not read the header...
+                    else                                                                // not a header line, error if we've not read the header...
                     {
                         QTextStream  lineIn(&qstrLine);
                         int       ndx, xval, yval;
@@ -432,7 +433,7 @@ void ComGeo::onReadPoly()
                         lineIn >> ndx >> xval >> yval;
                         if (QTextStream::Ok == lineIn.status())
                         {
-                            CPoint*    pTemp = new CPoint(xval, yval);
+                            CPoint*    pTemp = new CPoint(ndx, xval, yval);
                             m_vecPointSet.push_back(pTemp);
                         }
                         else
@@ -514,12 +515,32 @@ void ComGeo::onAlgoJarvisMarch()
 
 void ComGeo::onAlgoGrahamScan()
 {
-  std::cout << "in function: " << __FUNCTION__ << "File: " << __FILE__ << " (" << __LINE__ << ")" << std::endl;
+  if (m_vecPointSet.size() > 0)
+  {
+    QVector<edge*> edgeList;
+    convexHull  ch(&m_vecPointSet);
+    m_vertexList = ch.grahamScan();
+    drawScene();
+  }
+  else
+  {
+    QMessageBox::warning(this, "no data", "no point set - please generate a random point set, or read in a point set");
+  }
 }
 
 void ComGeo::onAlgoMergeHull()
 {
-  std::cout << "in function: " << __FUNCTION__ << "File: " << __FILE__ << " (" << __LINE__ << ")" << std::endl;
+  if (m_vecPointSet.size() > 0)
+  {
+    QVector<edge*> edgeList;
+    convexHull  ch(&m_vecPointSet);
+    m_vertexList = ch.mergeHull();
+    drawScene();
+  }
+  else
+  {
+    QMessageBox::warning(this, "no data", "no point set - please generate a random point set, or read in a point set");
+  }
 }
 
 

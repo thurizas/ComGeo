@@ -2,14 +2,14 @@
 
 #include <random>
 
-CPoint::CPoint() : m_x(0), m_y(0)
+CPoint::CPoint() : m_ndx(-1), m_x(0), m_y(0)
 {
 
 }
 
 
 
-CPoint::CPoint(float_t x, float_t y) :  m_x(x), m_y(y)
+CPoint::CPoint(uint32_t n, float_t x, float_t y) :  m_ndx(n), m_x(x), m_y(y)
 { }
 
 
@@ -51,6 +51,7 @@ CPoint& CPoint::operator=(const CPoint& rhs)
 {
   if (this != &rhs)               // check for self-assignment
   {
+    this->m_ndx = rhs.m_ndx;
     this->m_x = rhs.m_x;
     this->m_y = rhs.m_y;
   }
@@ -97,4 +98,10 @@ bool CPoint::operator<(const CPoint& other)
   }
 
   return ret;
+}
+
+std::ostream& operator<<(std::ostream& os, const CPoint& pt)
+{
+  os << pt.m_ndx << ":(" << const_cast<CPoint&>(pt).m_x << ", " << const_cast<CPoint&>(pt).m_y <<")";
+  return os;
 }

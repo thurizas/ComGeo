@@ -16,6 +16,8 @@ public:
   ~convexHull();
 
   QVector<CPoint> jervisMarch();
+  QVector<CPoint> grahamScan();
+  QVector<CPoint> mergeHull();
 
 private:
   //QVector<edge*>     m_hull;
