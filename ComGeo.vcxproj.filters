@@ -72,6 +72,12 @@
     <ClCompile Include="vector.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ptSetTriangulation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="triangle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="ComGeo.h">
@@ -135,6 +141,12 @@
       <Filter>Generated Files</Filter>
     </ClInclude>
     <ClInclude Include="vector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ptSetTriangulation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="triangle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

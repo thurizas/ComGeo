@@ -6,9 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>390</width>
-    <height>87</height>
+    <width>703</width>
+    <height>445</height>
    </rect>
+  </property>
+  <property name="font">
+   <font>
+    <family>IntelOne Mono</family>
+    <pointsize>11</pointsize>
+   </font>
   </property>
   <property name="windowTitle">
    <string>Number of Nodes to generate</string>
@@ -16,10 +22,10 @@
   <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
     <rect>
-     <x>220</x>
-     <y>50</y>
+     <x>350</x>
+     <y>360</y>
      <width>158</width>
-     <height>25</height>
+     <height>31</height>
     </rect>
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout">
@@ -54,34 +60,83 @@
     </item>
    </layout>
   </widget>
-  <widget class="QLabel" name="label">
+  <widget class="QWidget" name="verticalLayoutWidget">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>20</y>
-     <width>231</width>
-     <height>21</height>
+     <x>70</x>
+     <y>30</y>
+     <width>435</width>
+     <height>331</height>
     </rect>
    </property>
-   <property name="font">
-    <font>
-     <family>Courier New</family>
-     <pointsize>10</pointsize>
-    </font>
-   </property>
-   <property name="text">
-    <string>Number of nodes to generate:</string>
-   </property>
-  </widget>
-  <widget class="QLineEdit" name="lineEdit">
-   <property name="geometry">
-    <rect>
-     <x>260</x>
-     <y>20</y>
-     <width>113</width>
-     <height>20</height>
-    </rect>
-   </property>
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <layout class="QFormLayout" name="formLayout">
+      <item row="0" column="0">
+       <widget class="QLabel" name="label">
+        <property name="font">
+         <font>
+          <family>IntelOne Mono</family>
+          <pointsize>11</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>Number of nodes to generate:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLineEdit" name="lineEdit"/>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_2">
+        <property name="font">
+         <font>
+          <family>IntelOne Mono</family>
+          <pointsize>11</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>x-coordinate range         :</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLineEdit" name="lineEdit_3"/>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_3">
+        <property name="font">
+         <font>
+          <family>IntelOne Mono</family>
+          <pointsize>11</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>y-coordinate range         : </string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLineEdit" name="lineEdit_2"/>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="label_4">
+        <property name="text">
+         <string>Use Floating point values  :</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QCheckBox" name="checkBox">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
   </widget>
  </widget>
  <resources/>

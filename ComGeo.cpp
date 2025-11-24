@@ -7,6 +7,7 @@
 #include "2DGeomView.h"
 #include "dlgViewData.h"
 #include "convexHull.h"
+#include "ptSetTriangulation.h"
 
 #include <QGraphicsScene>
 #include <QGraphicsItem>
@@ -27,20 +28,22 @@
 
 #include <iostream>
 
-static const float_t scale = 10.0f;            // one unit = 10 pixels.
 
-// TODO : implement convex hull algorithms
 // TODO : implement triangulation algorithms
 // TODO : implement voronoi algorithms
 
-ComGeo::ComGeo(QWidget *parent) : QMainWindow(parent), m_pScene(nullptr), m_bDrawAxis(false), m_bDrawGrid(false)
+ComGeo::ComGeo(uint32_t w, uint32_t h, uint32_t s, QWidget *parent) : QMainWindow(parent), m_pScene(nullptr), m_bDrawAxis(false), m_bDrawGrid(false)
 {
-    setupUI();
-    setupActions();
-    setupMenus();
+  m_imageWidth = w;
+  m_imageHeight = h;
+  m_scale = s;
 
-    // build our scene object here... we will attach it to our render when we are ready to draw
-    m_pScene = new QGraphicsScene;
+  setupUI();
+  setupActions();
+  setupMenus();
+
+  // build our scene object here... we will attach it to our render when we are ready to draw
+  m_pScene = new QGraphicsScene;
 }
 
 void ComGeo::setupUI()
@@ -162,6 +165,23 @@ void ComGeo::setupActions()
     m_algoMergeHull->setStatusTip("calculate convex hull by Jarvis March");
     connect(m_algoMergeHull, &QAction::triggered, this, &ComGeo::onAlgoMergeHull);
 
+    m_algoIncremental = new QAction("Bowyer-Watson", this);
+    m_algoIncremental->setStatusTip("calculate the triangualation by Bowyer-Watson method");
+    connect(m_algoIncremental, &QAction::triggered, this, &ComGeo::onBowyerWatson);
+
+    m_algoGraham = new QAction("Graham's Algorithm", this);
+    m_algoGraham->setStatusTip("calculate the triangualation by Graham's Algorithm");
+    connect(m_algoGraham, &QAction::triggered, this, &ComGeo::onTriangulateGrahmanAlgorithm);
+
+
+    m_algoDivideConqure = new QAction("Divide and Conqure", this);
+    m_algoDivideConqure->setStatusTip("calculate the triangualation by Divide adn Conquer");
+    connect(m_algoDivideConqure, &QAction::triggered, this, &ComGeo::onTriangulateDivideConquer);
+
+
+    m_algoDelaunay = new QAction("Delaunay", this);
+    m_algoDelaunay->setStatusTip("calculate the triangualation by Delaunay Algorithm");
+    connect(m_algoDelaunay, &QAction::triggered, this, &ComGeo::onTriangulateDelaunay);
 
     m_helpAbout = new QAction("About", this);
     //m_HelpAbout->setShortcuts(QKeySequence::About);
@@ -211,7 +231,11 @@ void ComGeo::setupMenus()
     chAlgos->addAction(m_algoJarvisMarch);
     chAlgos->addAction(m_algoGrahamScan);
     chAlgos->addAction(m_algoMergeHull);
-    QMenu* triAlgo = m_algoMenu->addMenu("Triangulation");
+    QMenu* triAlgo = m_algoMenu->addMenu("Point Set Triangulation");
+    triAlgo->addAction(m_algoIncremental);
+    triAlgo->addAction(m_algoGraham);
+    triAlgo->addAction(m_algoDivideConqure);
+    triAlgo->addAction(m_algoDelaunay);
     QMenu* vcAlgo = m_algoMenu->addMenu("Voronoi Cells");
 
     m_helpMenu = menuBar()->addMenu("&Help");
@@ -223,6 +247,7 @@ void ComGeo::setupMenus()
 // slots...
 void ComGeo::onNew() 
 { 
+  // TODO : delete scene and create a new scene and attach to view, redraw view.
     if (nullptr != m_pScene)
         m_pScene->clear();
     clearData();
@@ -471,15 +496,16 @@ void ComGeo::onViewAxis()
 { 
     m_bDrawAxis = !m_bDrawAxis;
     m_viewAxis->setChecked(m_bDrawAxis);
+   
     drawScene();
 }
-
 
 
 void ComGeo::onViewGrid() 
 {  
     m_bDrawGrid = !m_bDrawGrid;
     m_viewGrid->setChecked(m_bDrawGrid);
+
     drawScene();
 }
 
@@ -544,6 +570,64 @@ void ComGeo::onAlgoMergeHull()
 }
 
 
+void ComGeo::onBowyerWatson()
+{
+  if (m_vecPointSet.size() > 0)
+  {
+    ptSetTriangulation tri(&m_vecPointSet);
+    m_triangles = tri.BowyerWatson();
+    drawScene();
+  }
+  else
+  {
+    QMessageBox::warning(this, "no data", "no point set - please generate a random point set, or read in a point set");
+  }
+}
+
+void ComGeo::onTriangulateGrahmanAlgorithm()
+{
+  if (m_vecPointSet.size() > 0)
+  {
+    ptSetTriangulation tri;
+    QVector<triangle> tris = tri.graham();
+    drawScene();
+  }
+  else
+  {
+    QMessageBox::warning(this, "no data", "no point set - please generate a random point set, or read in a point set");
+  }
+}
+
+void ComGeo::onTriangulateDivideConquer()
+{
+  if (m_vecPointSet.size() > 0)
+  {
+    ptSetTriangulation tri;
+    QVector<triangle> tris = tri.divideConquer();
+    drawScene();
+  }
+  else
+  {
+    QMessageBox::warning(this, "no data", "no point set - please generate a random point set, or read in a point set");
+  }
+}
+
+void ComGeo::onTriangulateDelaunay()
+{
+  if (m_vecPointSet.size() > 0)
+  {
+    ptSetTriangulation tri;
+    QVector<triangle> tris = tri.delaunay();
+    drawScene();
+  }
+  else
+  {
+    QMessageBox::warning(this, "no data", "no point set - please generate a random point set, or read in a point set");
+  }
+}
+
+
+
 void ComGeo::onAbout() { qDebug("in onAbout"); }
 void ComGeo::onHelp() { qDebug("in onHelp"); }
 
@@ -567,41 +651,63 @@ void ComGeo::clearData()
     if (m_vertexList.size() > 0)
         m_vertexList.erase(m_vertexList.begin(), m_vertexList.end());
 
+    if (m_triangles.size() > 0)
+      m_triangles.erase(m_triangles.begin(), m_triangles.end());
+
     m_pScene->clear();
 }
+
+
 
 
 // TODO : need to adjust for aspect ratio so things look correct.
 void ComGeo::drawScene()
 {
-    static QPen  gridPen(QBrush(Qt::lightGray), 0, Qt::DotLine);
+    static QPen  gridPen(QBrush(Qt::darkGray), 0, Qt::DotLine);
     static QPen  axisPen(QBrush(Qt::black), 0, Qt::SolidLine);
     static QPen  linePen(QBrush(Qt::black), 0, Qt::SolidLine);
-
-    int windowWidth = m_graphicsView->width();
-    int windowHeigth = m_graphicsView->height();
     
-
-    float step =  20.0;      // TODO : step size should be configurable...
-
     if (nullptr != m_pScene)
     {
         m_pScene->clear();                               // prepare to rebuild the scene
 
         if (m_bDrawAxis)
         {
-            m_pScene->addLine(0, 0.5*windowHeigth, windowWidth, 0.5*windowHeigth, axisPen);    // draw x-axis ...
-            m_pScene->addLine(0.5*windowWidth, 0, 0.5*windowWidth, windowHeigth, axisPen);     // draw y-axis ...
+          uint32_t maxXTicks = m_imageWidth / (2 * m_scale);
+          uint32_t maxYTicks = m_imageHeight / (2 * m_scale);
+
+          m_pScene->addLine(0, 0.5 * m_imageHeight, m_imageWidth, 0.5 * m_imageHeight, axisPen);
+
+          for (uint32_t ndx = 1; ndx <= maxXTicks; ndx++)
+          {
+            m_pScene->addLine(0.5 * m_imageWidth - ndx * m_scale, 0.5 * m_imageHeight - 5, 0.5 * m_imageWidth - ndx * m_scale, 0.5 * m_imageHeight + 5, axisPen);
+            m_pScene->addLine(0.5 * m_imageWidth + ndx * m_scale, 0.5 * m_imageHeight - 5, 0.5 * m_imageWidth + ndx * m_scale, 0.5 * m_imageHeight + 5, axisPen);
+          }
+
+          m_pScene->addLine(0.5 * m_imageWidth, 0, 0.5 * m_imageWidth, m_imageHeight, axisPen);
+          for (uint32_t ndx = 1; ndx <= maxYTicks; ndx++)
+          {
+            m_pScene->addLine(0.5 * m_imageWidth + 5, 0.5 * m_imageHeight - ndx * m_scale, 0.5 * m_imageWidth - 5, 0.5 * m_imageHeight - ndx * m_scale, axisPen);
+            m_pScene->addLine(0.5 * m_imageWidth + 5, 0.5 * m_imageHeight + ndx * m_scale, 0.5 * m_imageWidth - 5, 0.5 * m_imageHeight + ndx * m_scale, axisPen);
+          }
         }
 
         if (m_bDrawGrid)
         {
-            for (int ndx = 0; ndx <= 20; ndx++)
-            {
-                    m_pScene->addLine(0, (ndx / step)*windowHeigth, windowWidth, (ndx / step)*windowHeigth, gridPen);
-                    m_pScene->addLine((ndx / step)*windowWidth, 0, (ndx / step)*windowWidth, windowHeigth, gridPen);
-             
-            }
+          uint32_t maxXTicks = m_imageWidth / (2 * m_scale);
+          uint32_t maxYTicks = m_imageHeight / (2 * m_scale);
+
+          for (uint32_t ndx = 0; ndx <= maxXTicks; ndx += 10)
+          {
+            m_pScene->addLine(0.0, 0.5 * m_imageHeight - ndx * m_scale, m_imageWidth, 0.5 * m_imageHeight - ndx * m_scale, gridPen);
+            m_pScene->addLine(0.0, 0.5 * m_imageHeight + ndx * m_scale, m_imageWidth, 0.5 * m_imageHeight + ndx * m_scale, gridPen);
+          }
+
+          for (uint32_t ndx = 0; ndx <= maxYTicks; ndx+=10)
+          {
+            m_pScene->addLine(0.5 * m_imageWidth - ndx * m_scale, 0, 0.5 * m_imageWidth - ndx * m_scale, m_imageHeight, gridPen);
+            m_pScene->addLine(0.5 * m_imageWidth + ndx * m_scale, 0, 0.5 * m_imageWidth + ndx * m_scale, m_imageHeight, gridPen);
+          }
         }
 
         // draw the point set
@@ -613,12 +719,29 @@ void ComGeo::drawScene()
 
             while (m_vecPointSet.end() != viter)
             {
-                float_t x = ((*viter)->x())*scale + 0.5f*windowWidth;
-                float_t y = -((*viter)->y())*scale + 0.5f*windowHeigth;     // remember y increases from top right of window.
+                float_t x = ((*viter)->x())* m_scale + 0.5f*m_imageWidth;
+                float_t y = -((*viter)->y())* m_scale + 0.5f* m_imageHeight;     // remember y increases from top right of window.
                 m_pScene->addEllipse((x - delta), (y - delta) , (2 * delta) , (2 * delta) , linePen, QBrush(Qt::SolidPattern));
 
                 viter++;
             }
+        }
+
+        // draw the triangulation
+        if (m_triangles.size() > 0)
+        {
+          QVector<triangle>::iterator   viter = m_triangles.begin();
+
+          while (m_triangles.end() != viter)
+          {
+            for (uint8_t ndx = 0; ndx < 3; ndx++)
+            {
+              m_pScene->addLine(((*viter).pt(ndx).x())* m_scale + 0.5f * m_imageWidth, (-(*viter).pt(ndx).y()) * m_scale + 0.5f * m_imageHeight,
+                                ((*viter).pt((ndx+1)%3).x()) * m_scale + 0.5f * m_imageWidth, (-(*viter).pt((ndx + 1)%3).y()) * m_scale + 0.5f * m_imageHeight,
+                                linePen);
+            }
+            viter++;
+          }
         }
 
         // draw polygon
@@ -630,7 +753,7 @@ void ComGeo::drawScene()
                 CPoint ptHead = m_vertexList.at(ndx);
                 CPoint ptTail = m_vertexList.at((ndx + 1)%vextexCnt);
 
-                m_pScene->addLine(ptHead.x() * scale + 0.5*windowWidth, -ptHead.y() * scale + 0.5*windowHeigth, ptTail.x() * scale + 0.5*windowWidth, -ptTail.y() * scale + 0.5*windowHeigth, linePen);
+                m_pScene->addLine(ptHead.x() * m_scale + 0.5* m_imageWidth, -ptHead.y() * m_scale + 0.5* m_imageHeight, ptTail.x() * m_scale + 0.5* m_imageWidth, -ptTail.y() * m_scale + 0.5* m_imageHeight, linePen);
             }
         }
         

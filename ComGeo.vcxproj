@@ -131,6 +131,8 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="NumberEntry.cpp" />
     <ClCompile Include="point.cpp" />
+    <ClCompile Include="ptSetTriangulation.cpp" />
+    <ClCompile Include="triangle.cpp" />
     <ClCompile Include="utility.cpp" />
     <ClCompile Include="vector.cpp" />
     <ClCompile Include="XGetopt.cpp" />
@@ -153,6 +155,8 @@
     <ClInclude Include="GeneratedFiles\ui_ComGeo.h" />
     <ClInclude Include="GeneratedFiles\ui_NbrNodeInput.h" />
     <ClInclude Include="GeneratedFiles\ui_ViewDataSet.h" />
+    <ClInclude Include="ptSetTriangulation.h" />
+    <ClInclude Include="triangle.h" />
     <ClInclude Include="vector.h" />
     <ClInclude Include="XGetopt.h" />
     <QtMoc Include="2DGeomView.h" />

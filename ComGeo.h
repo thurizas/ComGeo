@@ -2,10 +2,14 @@
 
 #include <QtWidgets/QMainWindow>
 
+#include <vector>
+
 #include "point.h"
+#include "ptSetTriangulation.h"
 
 //class QGraphicsView;
 class QGraphicsScene;
+class QGraphicsLineItem;
 class TwoDGeomView;
 class QMenu;
 class QAction;
@@ -17,7 +21,7 @@ class ComGeo : public QMainWindow
 public:
   enum DATA : std::uint8_t { POINT = 0, LINE = 1, POLYGON = 2 };
 
-    ComGeo(QWidget *parent = Q_NULLPTR);
+    ComGeo(uint32_t, uint32_t, uint32_t, QWidget *parent = Q_NULLPTR);
     void setupUI();
     void setupActions();
     void setupMenus();
@@ -37,6 +41,10 @@ private slots:
     void onAlgoJarvisMarch();
     void onAlgoGrahamScan();
     void onAlgoMergeHull();
+    void onBowyerWatson();
+    void onTriangulateGrahmanAlgorithm();
+    void onTriangulateDivideConquer();
+    void onTriangulateDelaunay();
 
     void onAbout();
     void onHelp();
@@ -44,7 +52,10 @@ private slots:
 
 private:
     TwoDGeomView*     m_graphicsView;
-    QGraphicsScene* m_pScene;
+    QGraphicsScene*   m_pScene;
+    float_t           m_scale;
+    uint32_t          m_imageWidth;
+    uint32_t          m_imageHeight;
 
     QMenu* m_fileMenu;
     QMenu* m_dataMenu;
@@ -68,11 +79,16 @@ private:
     QAction* m_algoJarvisMarch;
     QAction* m_algoGrahamScan;
     QAction* m_algoMergeHull;
+    QAction* m_algoIncremental;
+    QAction* m_algoGraham;
+    QAction* m_algoDivideConqure;
+    QAction* m_algoDelaunay;
     QAction* m_helpAbout;
     QAction* m_helpHelp;
 
     QVector<CPoint*>    m_vecPointSet;
-    QVector<CPoint>    m_vertexList;
+    QVector<triangle>   m_triangles;
+    QVector<CPoint>     m_vertexList;
 
     bool               m_bDrawAxis;
     bool               m_bDrawGrid;
