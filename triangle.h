@@ -15,6 +15,7 @@ struct triangle
   CPoint pt(uint8_t ndx);
   int8_t windingOrder() { return m_winding; }
   bool contains(CPoint);
+  bool inCircumCircle(CPoint);
 
   friend std::ostream& operator<<(std::ostream&, const triangle&);
   friend std::ostream& operator<<(std::ostream&, const printArgsT&);
@@ -22,6 +23,11 @@ struct triangle
 private:
   CPoint  m_pts[3];
   uint8_t m_winding;
+  CPoint  m_center;              // center of circumcircle
+  float   m_radius;              // radius of circumcircle
+
+  void circumCircle();
+
   };
 
 #endif

@@ -19,13 +19,16 @@ public:
 
   ~ptSetTriangulation();
 
-  QVector<triangle> BowyerWatson();
+  QVector<triangle> incremental();
   QVector<triangle> graham();
   QVector<triangle> divideConquer();
-  QVector<triangle> delaunay();
+  QVector<triangle> bw_delaunay();
 
 private:
   QVector<CPoint>    m_pts;
+
+  triangle superTriangle();
+  QVector<edge> uniqueEdges(QVector<edge>);
 
 
 };

@@ -6,6 +6,7 @@
 
 #include "point.h"
 #include "ptSetTriangulation.h"
+#include "voronoi.h"
 
 //class QGraphicsView;
 class QGraphicsScene;
@@ -41,10 +42,11 @@ private slots:
     void onAlgoJarvisMarch();
     void onAlgoGrahamScan();
     void onAlgoMergeHull();
-    void onBowyerWatson();
+    void onTriangulateIncremental();
     void onTriangulateGrahmanAlgorithm();
     void onTriangulateDivideConquer();
     void onTriangulateDelaunay();
+    void onAlgoVoronoi();
 
     void onAbout();
     void onHelp();
@@ -83,12 +85,16 @@ private:
     QAction* m_algoGraham;
     QAction* m_algoDivideConqure;
     QAction* m_algoDelaunay;
+    QAction* m_algoVoronoi;
     QAction* m_helpAbout;
     QAction* m_helpHelp;
 
-    QVector<CPoint*>    m_vecPointSet;
-    QVector<triangle>   m_triangles;
-    QVector<CPoint>     m_vertexList;
+    std::tuple<float, float, float, float> m_extents;
+
+    QVector<CPoint*>                       m_vecPointSet;
+    QVector<triangle>                      m_triangles;
+    QVector<CPoint>                        m_vertexList;
+    QVector<seg*>                          m_cells;
 
     bool               m_bDrawAxis;
     bool               m_bDrawGrid;

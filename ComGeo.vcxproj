@@ -135,6 +135,7 @@
     <ClCompile Include="triangle.cpp" />
     <ClCompile Include="utility.cpp" />
     <ClCompile Include="vector.cpp" />
+    <ClCompile Include="voronoi.cpp" />
     <ClCompile Include="XGetopt.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -158,6 +159,7 @@
     <ClInclude Include="ptSetTriangulation.h" />
     <ClInclude Include="triangle.h" />
     <ClInclude Include="vector.h" />
+    <ClInclude Include="voronoi.h" />
     <ClInclude Include="XGetopt.h" />
     <QtMoc Include="2DGeomView.h" />
     <ClInclude Include="console.h" />

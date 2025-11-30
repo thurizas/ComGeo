@@ -15,6 +15,11 @@ public:
   CPoint org() { return m_org; }
   CPoint dst() { return m_dest; }
 
+  bool operator<(const edge&);
+  bool operator==(const edge&);
+
+  friend std::ostream& operator<<(std::ostream&, const edge&);
+
 private:
   CPoint  m_org;
   CPoint  m_dest;

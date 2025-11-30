@@ -13,7 +13,9 @@ class CPoint
       CPoint& operator=(const CPoint&);
   
       float_t x() { return m_x; }
+      void x(float_t _x) { m_x = _x; }
       float_t y() { return m_y; }
+      void y(float_t _y) { m_y = _y; }
       int32_t ndx() { return m_ndx; }
   
       void randomIntPoint(int, int, int, int);

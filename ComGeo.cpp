@@ -8,6 +8,7 @@
 #include "dlgViewData.h"
 #include "convexHull.h"
 #include "ptSetTriangulation.h"
+#include "voronoi.h"
 
 #include <QGraphicsScene>
 #include <QGraphicsItem>
@@ -27,6 +28,7 @@
 #include <QMessageBox>
 
 #include <iostream>
+#include <tuple>
 
 
 // TODO : implement triangulation algorithms
@@ -37,6 +39,9 @@ ComGeo::ComGeo(uint32_t w, uint32_t h, uint32_t s, QWidget *parent) : QMainWindo
   m_imageWidth = w;
   m_imageHeight = h;
   m_scale = s;
+
+  // set up extents of the point set .. minx, maxx, miny, maxy
+  m_extents = std::make_tuple(INFINITY, -INFINITY, INFINITY, -INFINITY);
 
   setupUI();
   setupActions();
@@ -166,22 +171,24 @@ void ComGeo::setupActions()
     connect(m_algoMergeHull, &QAction::triggered, this, &ComGeo::onAlgoMergeHull);
 
     m_algoIncremental = new QAction("Bowyer-Watson", this);
-    m_algoIncremental->setStatusTip("calculate the triangualation by Bowyer-Watson method");
-    connect(m_algoIncremental, &QAction::triggered, this, &ComGeo::onBowyerWatson);
+    m_algoIncremental->setStatusTip("calculate the triangualation by incremental method");
+    connect(m_algoIncremental, &QAction::triggered, this, &ComGeo::onTriangulateIncremental);
 
     m_algoGraham = new QAction("Graham's Algorithm", this);
     m_algoGraham->setStatusTip("calculate the triangualation by Graham's Algorithm");
     connect(m_algoGraham, &QAction::triggered, this, &ComGeo::onTriangulateGrahmanAlgorithm);
 
-
     m_algoDivideConqure = new QAction("Divide and Conqure", this);
     m_algoDivideConqure->setStatusTip("calculate the triangualation by Divide adn Conquer");
     connect(m_algoDivideConqure, &QAction::triggered, this, &ComGeo::onTriangulateDivideConquer);
 
-
     m_algoDelaunay = new QAction("Delaunay", this);
     m_algoDelaunay->setStatusTip("calculate the triangualation by Delaunay Algorithm");
     connect(m_algoDelaunay, &QAction::triggered, this, &ComGeo::onTriangulateDelaunay);
+
+    m_algoVoronoi = new QAction("Voronoi", this);
+    m_algoVoronoi->setStatusTip("calculate the Voronoi partition of a point set");
+    connect(m_algoVoronoi, &QAction::triggered, this, &ComGeo::onAlgoVoronoi);
 
     m_helpAbout = new QAction("About", this);
     //m_HelpAbout->setShortcuts(QKeySequence::About);
@@ -236,7 +243,7 @@ void ComGeo::setupMenus()
     triAlgo->addAction(m_algoGraham);
     triAlgo->addAction(m_algoDivideConqure);
     triAlgo->addAction(m_algoDelaunay);
-    QMenu* vcAlgo = m_algoMenu->addMenu("Voronoi Cells");
+    m_algoMenu->addAction(m_algoVoronoi);
 
     m_helpMenu = menuBar()->addMenu("&Help");
     m_helpMenu->addAction(m_helpAbout);
@@ -286,6 +293,8 @@ void ComGeo::onRandomPtSet()
         int32_t minY = dlg.minY();
         int32_t maxX = dlg.maxX();
         int32_t maxY = dlg.maxY();
+
+        m_extents = std::make_tuple(minX, maxX, minY, maxY);
 
         bool    useReals = dlg.useReals();
 
@@ -375,8 +384,13 @@ void ComGeo::onReadPtSet()
                         lineIn >> ndx >> xval >> yval;
                         if (QTextStream::Ok == lineIn.status())
                         {
-                            CPoint*    pTemp = new CPoint(ndx, xval, yval);
-                            m_vecPointSet.push_back(pTemp);
+                          if (xval < std::get<0>(m_extents)) std::get<0>(m_extents) = xval;
+                          if (std::get<1>(m_extents) < xval) std::get<1>(m_extents) = xval;
+                          if (yval < std::get<2>(m_extents)) std::get<2>(m_extents) = yval;
+                          if (std::get<3>(m_extents) < yval) std::get<3>(m_extents) = yval;
+
+                          CPoint*    pTemp = new CPoint(ndx, xval, yval);
+                          m_vecPointSet.push_back(pTemp);
                         }
                         else
                         {
@@ -570,12 +584,12 @@ void ComGeo::onAlgoMergeHull()
 }
 
 
-void ComGeo::onBowyerWatson()
+void ComGeo::onTriangulateIncremental()
 {
   if (m_vecPointSet.size() > 0)
   {
     ptSetTriangulation tri(&m_vecPointSet);
-    m_triangles = tri.BowyerWatson();
+    m_triangles = tri.incremental();
     drawScene();
   }
   else
@@ -588,7 +602,7 @@ void ComGeo::onTriangulateGrahmanAlgorithm()
 {
   if (m_vecPointSet.size() > 0)
   {
-    ptSetTriangulation tri;
+    ptSetTriangulation tri(&m_vecPointSet);
     QVector<triangle> tris = tri.graham();
     drawScene();
   }
@@ -602,8 +616,8 @@ void ComGeo::onTriangulateDivideConquer()
 {
   if (m_vecPointSet.size() > 0)
   {
-    ptSetTriangulation tri;
-    QVector<triangle> tris = tri.divideConquer();
+    ptSetTriangulation tri(&m_vecPointSet);
+    m_triangles = tri.divideConquer();
     drawScene();
   }
   else
@@ -616,8 +630,22 @@ void ComGeo::onTriangulateDelaunay()
 {
   if (m_vecPointSet.size() > 0)
   {
-    ptSetTriangulation tri;
-    QVector<triangle> tris = tri.delaunay();
+    ptSetTriangulation tri(&m_vecPointSet);
+    m_triangles = tri.bw_delaunay();
+    drawScene();
+  }
+  else
+  {
+    QMessageBox::warning(this, "no data", "no point set - please generate a random point set, or read in a point set");
+  }
+}
+
+void ComGeo::onAlgoVoronoi()
+{
+  if (m_vecPointSet.size() > 0)
+  {
+    voronoi vor(&m_vecPointSet);
+    m_cells = vor.voronoiCells();
     drawScene();
   }
   else
@@ -654,6 +682,16 @@ void ComGeo::clearData()
     if (m_triangles.size() > 0)
       m_triangles.erase(m_triangles.begin(), m_triangles.end());
 
+    if (m_cells.size() > 0)
+    {
+      for (seg* s : m_cells)
+      {
+        delete s;
+      }
+      m_cells.erase(m_cells.begin(), m_cells.end());
+    }
+      
+
     m_pScene->clear();
 }
 
@@ -666,6 +704,9 @@ void ComGeo::drawScene()
     static QPen  gridPen(QBrush(Qt::darkGray), 0, Qt::DotLine);
     static QPen  axisPen(QBrush(Qt::black), 0, Qt::SolidLine);
     static QPen  linePen(QBrush(Qt::black), 0, Qt::SolidLine);
+
+    std::cout << "x range: [" << std::get<0>(m_extents) << "," << std::get<1>(m_extents) << "]  y range: [";
+    std::cout << std::get<2>(m_extents) << "," << std::get<3>(m_extents) << "]" << std::endl;
     
     if (nullptr != m_pScene)
     {
@@ -673,10 +714,14 @@ void ComGeo::drawScene()
 
         if (m_bDrawAxis)
         {
+          float dx = (std::get<1>(m_extents) - std::get<0>(m_extents)) * m_scale;
+          float dy = (std::get<3>(m_extents) - std::get<2>(m_extents))* m_scale; 
+
           uint32_t maxXTicks = m_imageWidth / (2 * m_scale);
           uint32_t maxYTicks = m_imageHeight / (2 * m_scale);
 
           m_pScene->addLine(0, 0.5 * m_imageHeight, m_imageWidth, 0.5 * m_imageHeight, axisPen);
+          //m_pScene->addLine(  0, 0.5 * dy           , dx          , 0.5 * dy           , axisPen);
 
           for (uint32_t ndx = 1; ndx <= maxXTicks; ndx++)
           {
@@ -685,6 +730,7 @@ void ComGeo::drawScene()
           }
 
           m_pScene->addLine(0.5 * m_imageWidth, 0, 0.5 * m_imageWidth, m_imageHeight, axisPen);
+          //m_pScene->addLine(0.5 * dx, 0, 0.5 * dx, dy, axisPen);
           for (uint32_t ndx = 1; ndx <= maxYTicks; ndx++)
           {
             m_pScene->addLine(0.5 * m_imageWidth + 5, 0.5 * m_imageHeight - ndx * m_scale, 0.5 * m_imageWidth - 5, 0.5 * m_imageHeight - ndx * m_scale, axisPen);
@@ -713,7 +759,12 @@ void ComGeo::drawScene()
         // draw the point set
         if (m_vecPointSet.size() > 0)
         {
-            float   delta = 0.500f;
+          float delta = 0.0500f;
+          float factor = std::min((std::get<1>(m_extents) - std::get<0>(m_extents)), (std::get<3>(m_extents) - std::get<2>(m_extents)));
+          if (factor < 2.0) delta = 0.0500f;
+          else if (factor < 20) delta = 0.500f;
+          else delta = 1.000f;
+
             QVector<CPoint*>::Iterator     viter;
             viter = m_vecPointSet.begin();
 
@@ -741,6 +792,17 @@ void ComGeo::drawScene()
                                 linePen);
             }
             viter++;
+          }
+        }
+
+        // draw the voronoi cells
+        if (m_cells.size() > 0)
+        {
+          for (seg* s : m_cells)
+          {
+            m_pScene->addLine(s->start.x() * m_scale + 0.5f*m_imageWidth, -s->start.y()*m_scale + 0.5f*m_imageHeight,
+                              s->end.x()* m_scale + 0.5f*m_imageWidth, -s->end.y()*m_scale + 0.5f*m_imageHeight,
+                              linePen);
           }
         }
 

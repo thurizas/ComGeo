@@ -11,6 +11,8 @@ triangle::triangle(CPoint a, CPoint b, CPoint c) : m_pts{ a,b,c }
   else
     m_winding = UNK;
 
+  circumCircle();
+
 }
 
 CPoint triangle::pt(uint8_t ndx)
@@ -38,6 +40,36 @@ bool triangle::contains(CPoint pt)
 
   return ((o1 == RIGHT) && (o2 == RIGHT) && (o3 == RIGHT));
 }
+
+// calculates the circumcircle of a triange given three points.
+// algorithm from O'Rourke 2ed. pg. 189
+void triangle::circumCircle()
+{
+  CPoint a = this->pt(0) , b = this->pt(1), c = this->pt(2);
+
+  float A = b.x() - a.x();
+  float B = b.y() - a.y();
+  float C = c.x() - a.x();
+  float D = c.y() - a.y();
+  float E = A * (a.x() + b.x()) + B * (a.y() + b.y());
+  float F = C * (a.x() + c.x()) + D * (a.y() + c.y());
+  float G = 2 * (A * (c.y() - b.y()) - B * (c.x() - b.x()));
+
+  if (G == 0) return;                              // points are colinear
+
+  m_center.x((D * E - B * F) / G);                 // define center point 
+  m_center.y((A * F - C * E) / G);
+
+  m_radius = sqrt((a.x() - m_center.x()) * (a.x() - m_center.x()) + (a.y() - m_center.y()) * (a.y() - m_center.y()));
+}
+
+bool triangle::inCircumCircle(CPoint v)
+{
+  float dx = m_center.x() - v.x();
+  float dy = m_center.y() - v.y();
+  return (dx * dx + dy * dy) <= m_radius*m_radius;
+}
+
 
 std::ostream& operator<<(std::ostream& os, const triangle& t)
 {
