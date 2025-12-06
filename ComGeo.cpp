@@ -9,6 +9,7 @@
 #include "convexHull.h"
 #include "ptSetTriangulation.h"
 #include "voronoi.h"
+#include "ptSizeDlg.h"
 
 #include <QGraphicsScene>
 #include <QGraphicsItem>
@@ -17,7 +18,6 @@
 #include <QApplication>
 #include <QGraphicsView>
 #include <QHBoxLayout>
-#include <QMainWindow>
 #include <QMenuBar>
 #include <QStatusBar>
 #include <QToolBar>
@@ -26,13 +26,12 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QColorDialog>
 
 #include <iostream>
 #include <tuple>
 
 
-// TODO : implement triangulation algorithms
-// TODO : implement voronoi algorithms
 
 ComGeo::ComGeo(uint32_t w, uint32_t h, uint32_t s, QWidget *parent) : QMainWindow(parent), m_pScene(nullptr), m_bDrawAxis(false), m_bDrawGrid(false)
 {
@@ -49,6 +48,17 @@ ComGeo::ComGeo(uint32_t w, uint32_t h, uint32_t s, QWidget *parent) : QMainWindo
 
   // build our scene object here... we will attach it to our render when we are ready to draw
   m_pScene = new QGraphicsScene;
+
+
+  // initialize graphic items we will be using...
+  m_ptPen = QPen(QBrush(Qt::black), 0, Qt::SolidLine);
+  m_ptBrush = QBrush(Qt::SolidPattern);
+  m_chPen = QPen(QBrush(Qt::black), 0, Qt::SolidLine);;
+  //m_chBrush;
+  m_triPen = QPen(QBrush(Qt::black), 0, Qt::SolidLine);;
+  //m_triBrush;
+  m_vorPen = QPen(QBrush(Qt::black), 0, Qt::SolidLine);;
+  //m_vorBrush;
 }
 
 void ComGeo::setupUI()
@@ -190,6 +200,63 @@ void ComGeo::setupActions()
     m_algoVoronoi->setStatusTip("calculate the Voronoi partition of a point set");
     connect(m_algoVoronoi, &QAction::triggered, this, &ComGeo::onAlgoVoronoi);
 
+    m_showPointSet = new QAction("show Point Set", this);
+    m_showPointSet->setStatusTip("view/hide the point set");
+    m_showPointSet->setCheckable(true);
+    m_showPointSet->setChecked(m_bShowPtSet);
+    connect(m_showPointSet, &QAction::triggered, this, &ComGeo::onShowPtSet);
+
+    m_choosePointSetColor = new QAction("set Point Set color", this);
+    m_choosePointSetColor->setStatusTip("set the color used to display point set");
+    connect(m_choosePointSetColor, &QAction::triggered, this, &ComGeo::onChooseColorPtSet);
+
+    m_setPointSetSize = new QAction("set Point Set size", this);
+    m_setPointSetSize->setStatusTip("set the size used to display a point in the  point set");
+    connect(m_setPointSetSize, &QAction::triggered, this, &ComGeo::onSetSizePtSet);
+
+    m_showConvexHull = new QAction("show Convex Hull", this);
+    m_showConvexHull->setStatusTip("view/hide the Convex Hull");
+    m_showConvexHull->setCheckable(true);
+    m_showConvexHull->setChecked(m_bShowConvexHull);
+    connect(m_showConvexHull, &QAction::triggered, this, &ComGeo::onShowConvexHull);
+
+    m_chooseConvexHullColor = new QAction("set Convex Hull color", this);
+    m_chooseConvexHullColor->setStatusTip("set the color used to display the Convex Hull");
+    connect(m_chooseConvexHullColor, &QAction::triggered, this, &ComGeo::onChooseColorConvexHull);
+
+    m_setConvexHullLineProps = new QAction("set Convex Hull line properties", this);
+    m_setConvexHullLineProps->setStatusTip("set the properties used to display the Convex Hull line");
+    connect(m_setConvexHullLineProps, &QAction::triggered, this, &ComGeo::onSetConvexHullLineProps);
+    
+    m_showTriangulation = new QAction("show Triangulation", this);
+    m_showTriangulation->setStatusTip("view/hide the Triangulation");
+    m_showTriangulation->setCheckable(true);
+    m_showTriangulation->setChecked(m_bShowTriangulation);
+    connect(m_showTriangulation, &QAction::triggered, this, &ComGeo::onShowTriangulation);
+
+    m_chooseTriangulationColor = new QAction("set Triangulation color", this);
+    m_chooseTriangulationColor->setStatusTip("set the color used to display the Triangulation");
+    connect(m_chooseTriangulationColor, &QAction::triggered, this, &ComGeo::onChooseColorTriangulation);
+
+    m_setTriagulationLineProps = new QAction("set Triangulation line properties", this);
+    m_setTriagulationLineProps->setStatusTip("set the properties used to display the Triangulation lines");
+    connect(m_setTriagulationLineProps, &QAction::triggered, this, &ComGeo::onSetTriangulationLineProps);
+    
+    m_showVoronoi = new QAction("show Voronoi", this);
+    m_showVoronoi->setStatusTip("view/hide the Voronoi Cells");
+    m_showVoronoi->setCheckable(true);
+    m_showVoronoi->setChecked(m_bShowVoronoi);
+    connect(m_showVoronoi, &QAction::triggered, this, &ComGeo::onShowVoronoi);
+
+    m_chooseVoronoiColor = new QAction("set Voronoi color", this);
+    m_chooseVoronoiColor->setStatusTip("set the color used to display the Voronoi lines");
+    connect(m_chooseVoronoiColor, &QAction::triggered, this, &ComGeo::onChooseColorVoronoi);
+
+    m_setVoronoiLineProps = new QAction("set Voronoi line properties", this);
+    m_setVoronoiLineProps->setStatusTip("set the properties used to display the Voronoi lines");
+    connect(m_setVoronoiLineProps, &QAction::triggered, this, &ComGeo::onSetVoronoiLineProps);
+
+
     m_helpAbout = new QAction("About", this);
     //m_HelpAbout->setShortcuts(QKeySequence::About);
     m_helpAbout->setStatusTip("shows progam information");
@@ -244,6 +311,27 @@ void ComGeo::setupMenus()
     triAlgo->addAction(m_algoDivideConqure);
     triAlgo->addAction(m_algoDelaunay);
     m_algoMenu->addAction(m_algoVoronoi);
+
+    m_editMenu = menuBar()->addMenu("&Edit");
+    QMenu* editPointSet = m_editMenu->addMenu("Point Set");
+    editPointSet->addAction(m_showPointSet);
+    editPointSet->addAction(m_choosePointSetColor);
+    editPointSet->addAction(m_setPointSetSize);
+
+    QMenu* editConvexHull = m_editMenu->addMenu("Convex Hull");
+    editConvexHull->addAction(m_showConvexHull);
+    editConvexHull->addAction(m_chooseConvexHullColor);
+    editConvexHull->addAction(m_setConvexHullLineProps);
+
+    QMenu* editTriangulation = m_editMenu->addMenu("Triangulation");
+    editTriangulation->addAction(m_showTriangulation);
+    editTriangulation->addAction(m_chooseTriangulationColor);
+    editTriangulation->addAction(m_setTriagulationLineProps);
+
+    QMenu* editVoronoi = m_editMenu->addMenu("Voronoi");
+    editVoronoi->addAction(m_showVoronoi);
+    editVoronoi->addAction(m_chooseVoronoiColor);
+    editVoronoi->addAction(m_setVoronoiLineProps);
 
     m_helpMenu = menuBar()->addMenu("&Help");
     m_helpMenu->addAction(m_helpAbout);
@@ -326,6 +414,8 @@ void ComGeo::onRandomPtSet()
           QMessageBox::information(this, "point set size", QString("failed to generate %1 unique point").arg(cntPoints));
         }
 
+        m_bShowPtSet = true;
+        m_showPointSet->setChecked(m_bShowPtSet);
         drawScene();  
     }
 }
@@ -406,7 +496,9 @@ void ComGeo::onReadPtSet()
                 QMessageBox::warning(nullptr, "warning", "failed to read expected points");
             }
 
-            //clearData();
+            m_bShowPtSet = true;
+            m_showPointSet->setChecked(m_bShowPtSet);
+            m_ptSize = getDefaultPointSize();
             drawScene();
         }
         else
@@ -545,6 +637,8 @@ void ComGeo::onAlgoJarvisMarch()
     QVector<edge*> edgeList;
     convexHull  ch(&m_vecPointSet);
     m_vertexList = ch.jervisMarch();
+    m_bShowConvexHull = true;
+    m_showConvexHull->setChecked(m_bShowConvexHull);
     drawScene();
   }
   else
@@ -560,6 +654,8 @@ void ComGeo::onAlgoGrahamScan()
     QVector<edge*> edgeList;
     convexHull  ch(&m_vecPointSet);
     m_vertexList = ch.grahamScan();
+    m_bShowConvexHull = true;
+    m_showConvexHull->setChecked(m_bShowConvexHull);
     drawScene();
   }
   else
@@ -575,6 +671,8 @@ void ComGeo::onAlgoMergeHull()
     QVector<edge*> edgeList;
     convexHull  ch(&m_vecPointSet);
     m_vertexList = ch.mergeHull();
+    m_bShowConvexHull = true;
+    m_showConvexHull->setChecked(m_bShowConvexHull);
     drawScene();
   }
   else
@@ -590,6 +688,8 @@ void ComGeo::onTriangulateIncremental()
   {
     ptSetTriangulation tri(&m_vecPointSet);
     m_triangles = tri.incremental();
+    m_bShowTriangulation = true;
+    m_showConvexHull->setChecked(m_bShowConvexHull);
     drawScene();
   }
   else
@@ -604,6 +704,8 @@ void ComGeo::onTriangulateGrahmanAlgorithm()
   {
     ptSetTriangulation tri(&m_vecPointSet);
     QVector<triangle> tris = tri.graham();
+    m_bShowTriangulation = true;
+    m_showTriangulation->setChecked(m_bShowTriangulation);
     drawScene();
   }
   else
@@ -618,6 +720,8 @@ void ComGeo::onTriangulateDivideConquer()
   {
     ptSetTriangulation tri(&m_vecPointSet);
     m_triangles = tri.divideConquer();
+    m_bShowTriangulation = true;
+    m_showTriangulation->setChecked(m_bShowTriangulation);
     drawScene();
   }
   else
@@ -626,12 +730,25 @@ void ComGeo::onTriangulateDivideConquer()
   }
 }
 
+/**********************************************************************************************************************
+ * Function: onAlgoVoronoi
+ *
+ * Abstract:
+ *
+ * Input   : void
+ *
+ * Returns : void
+ *
+ * Written : Nov 2025 (gkhuber)
+ *********************************************************************************************************************/
 void ComGeo::onTriangulateDelaunay()
 {
   if (m_vecPointSet.size() > 0)
   {
     ptSetTriangulation tri(&m_vecPointSet);
     m_triangles = tri.bw_delaunay();
+    m_bShowTriangulation = true;
+    m_showTriangulation->setChecked(m_bShowTriangulation);
     drawScene();
   }
   else
@@ -640,12 +757,27 @@ void ComGeo::onTriangulateDelaunay()
   }
 }
 
+
+
+/**********************************************************************************************************************
+ * Function: onAlgoVoronoi
+ *
+ * Abstract:
+ *
+ * Input   : void 
+ *
+ * Returns : void 
+ *
+ * Written : Nov 2025 (gkhuber) 
+ *********************************************************************************************************************/
 void ComGeo::onAlgoVoronoi()
 {
   if (m_vecPointSet.size() > 0)
   {
     voronoi vor(&m_vecPointSet);
     m_cells = vor.voronoiCells();
+    m_bShowVoronoi = true;
+    m_showVoronoi->setChecked(m_bShowVoronoi);
     drawScene();
   }
   else
@@ -654,7 +786,187 @@ void ComGeo::onAlgoVoronoi()
   }
 }
 
+/**********************************************************************************************************************
+ * Function: onShowPtSet
+ *
+ * Abstract:
+ *
+ * Input   : void
+ *
+ * Returns : void
+ *
+ * Written : Dec 2025 (gkhuber)
+ *********************************************************************************************************************/
+void ComGeo::onShowPtSet() 
+{
+  m_bShowPtSet = !m_bShowPtSet;
+  m_showPointSet->setChecked(m_bShowPtSet);
+  drawScene();
+}
 
+/**********************************************************************************************************************
+ * Function: onChooseColorPtSet
+ *
+ * Abstract:
+ *
+ * Input   : void
+ *
+ * Returns : void
+ *
+ * Written : Dec 2025 (gkhuber)
+ *********************************************************************************************************************/
+void ComGeo::onChooseColorPtSet() 
+{
+  QColor clrInitial = m_ptPen.color();
+  QColor clrNew = QColorDialog::getColor(clrInitial, nullptr, QString("Choose color for point set"));
+  m_ptPen.setColor(clrNew);
+  m_ptBrush.setColor(clrNew);
+  drawScene();
+}
+
+/**********************************************************************************************************************
+ * Function: onSetSizePtSet
+ *
+ * Abstract:
+ *
+ * Input   : void
+ *
+ * Returns : void
+ *
+ * Written : Dec 2025 (gkhuber)
+ *********************************************************************************************************************/
+void ComGeo::onSetSizePtSet() 
+{
+  ptSizeDlg    dlg(m_ptSize);
+
+  uint32_t nret = dlg.exec();
+
+  if (QDialog::Accepted == nret)
+  {
+    m_ptSize = dlg.size();             // get the new point size
+    drawScene();                       // redraw the scene
+  }
+}
+
+/**********************************************************************************************************************
+ * Function: onShowConvexHull
+ *
+ * Abstract:
+ *
+ * Input   : void
+ *
+ * Returns : void
+ *
+ * Written : Dec 2025 (gkhuber)
+ *********************************************************************************************************************/
+void ComGeo::onShowConvexHull() 
+{
+  m_bShowConvexHull = !m_bShowConvexHull;
+  m_showConvexHull->setChecked(m_bShowConvexHull);
+  drawScene();
+}
+
+/**********************************************************************************************************************
+ * Function: onChooseColorConvexHull
+ *
+ * Abstract:
+ *
+ * Input   : void
+ *
+ * Returns : void
+ *
+ * Written : Dec 2025 (gkhuber)
+ *********************************************************************************************************************/
+void ComGeo::onChooseColorConvexHull() 
+{
+  QColor clrInitial = m_ptPen.color();
+  QColor clrNew = QColorDialog::getColor(clrInitial, nullptr, QString("Choose color for point set"));
+  m_chPen.setColor(clrNew);
+  //m_ptBrush.setColor(clrNew);
+  drawScene();
+}
+
+void ComGeo::onSetConvexHullLineProps() {}
+
+/**********************************************************************************************************************
+ * Function: onShowTriangulation
+ *
+ * Abstract:
+ *
+ * Input   : void
+ *
+ * Returns : void
+ *
+ * Written : Dec 2025 (gkhuber)
+ *********************************************************************************************************************/
+void ComGeo::onShowTriangulation() 
+{
+  m_bShowTriangulation = !m_bShowTriangulation;
+  m_showTriangulation->setChecked(m_bShowTriangulation);
+  drawScene();
+}
+
+/**********************************************************************************************************************
+ * Function: onChooseColorTriangulation
+ *
+ * Abstract:
+ *
+ * Input   : void
+ *
+ * Returns : void
+ *
+ * Written : Dec 2025 (gkhuber)
+ *********************************************************************************************************************/
+void ComGeo::onChooseColorTriangulation() 
+{
+  QColor clrInitial = m_ptPen.color();
+  QColor clrNew = QColorDialog::getColor(clrInitial, nullptr, QString("Choose color for point set"));
+  m_triPen.setColor(clrNew);
+  //m_ptBrush.setColor(clrNew);
+  drawScene();
+}
+
+void ComGeo::onSetTriangulationLineProps() {}
+
+/**********************************************************************************************************************
+ * Function: onChooseColorVoronoi
+ *
+ * Abstract:
+ *
+ * Input   : void
+ *
+ * Returns : void
+ *
+ * Written : Dec 2025 (gkhuber)
+ *********************************************************************************************************************/
+void ComGeo::onShowVoronoi()
+{
+  m_bShowVoronoi = !m_bShowVoronoi;
+  m_showVoronoi->setChecked(m_bShowVoronoi);
+  drawScene();
+}
+
+/**********************************************************************************************************************
+ * Function: onChooseColorVoronoi
+ *
+ * Abstract:
+ *
+ * Input   : void
+ *
+ * Returns : void
+ *
+ * Written : Dec 2025 (gkhuber)
+ *********************************************************************************************************************/
+void ComGeo::onChooseColorVoronoi() 
+{
+  QColor clrInitial = m_ptPen.color();
+  QColor clrNew = QColorDialog::getColor(clrInitial, nullptr, QString("Choose color for point set"));
+  m_vorPen.setColor(clrNew);
+  //m_ptBrush.setColor(clrNew);
+  drawScene();
+}
+
+void ComGeo::onSetVoronoiLineProps() {}
 
 void ComGeo::onAbout() { qDebug("in onAbout"); }
 void ComGeo::onHelp() { qDebug("in onHelp"); }
@@ -691,7 +1003,6 @@ void ComGeo::clearData()
       m_cells.erase(m_cells.begin(), m_cells.end());
     }
       
-
     m_pScene->clear();
 }
 
@@ -699,6 +1010,19 @@ void ComGeo::clearData()
 
 
 // TODO : need to adjust for aspect ratio so things look correct.
+/**********************************************************************************************************************
+ * Function: drawScene
+ *
+ * Abstract:
+ *
+ * Input   :
+ *
+ * Returns :
+ *
+ * Written : (gkhuber)
+ * Modified: Nov 2025 add support for convex hull, delaunay, and voronoi algorithsm
+ * Modified: Dec 2025 add support for toggling various algorithmic output on/off
+ *********************************************************************************************************************/
 void ComGeo::drawScene()
 {
     static QPen  gridPen(QBrush(Qt::darkGray), 0, Qt::DotLine);
@@ -757,69 +1081,96 @@ void ComGeo::drawScene()
         }
 
         // draw the point set
-        if (m_vecPointSet.size() > 0)
+        if (m_bShowPtSet)
         {
-          float delta = 0.0500f;
-          float factor = std::min((std::get<1>(m_extents) - std::get<0>(m_extents)), (std::get<3>(m_extents) - std::get<2>(m_extents)));
-          if (factor < 2.0) delta = 0.0500f;
-          else if (factor < 20) delta = 0.500f;
-          else delta = 1.000f;
+          if (m_vecPointSet.size() > 0)
+          {
+              QVector<CPoint*>::Iterator     viter;
+              viter = m_vecPointSet.begin();
 
-            QVector<CPoint*>::Iterator     viter;
-            viter = m_vecPointSet.begin();
+              while (m_vecPointSet.end() != viter)
+              {
+                  float_t x = ((*viter)->x())* m_scale + 0.5f*m_imageWidth;
+                  float_t y = -((*viter)->y())* m_scale + 0.5f* m_imageHeight;     // remember y increases from top right of window.
+                  m_pScene->addEllipse((x - m_ptSize), (y - m_ptSize) , (2 * m_ptSize) , (2 * m_ptSize) , m_ptPen, m_ptBrush);
 
-            while (m_vecPointSet.end() != viter)
-            {
-                float_t x = ((*viter)->x())* m_scale + 0.5f*m_imageWidth;
-                float_t y = -((*viter)->y())* m_scale + 0.5f* m_imageHeight;     // remember y increases from top right of window.
-                m_pScene->addEllipse((x - delta), (y - delta) , (2 * delta) , (2 * delta) , linePen, QBrush(Qt::SolidPattern));
-
-                viter++;
-            }
+                  viter++;
+              }
+          }
         }
+
 
         // draw the triangulation
-        if (m_triangles.size() > 0)
+        if (m_bShowTriangulation)
         {
-          QVector<triangle>::iterator   viter = m_triangles.begin();
-
-          while (m_triangles.end() != viter)
+          if (m_triangles.size() > 0)
           {
-            for (uint8_t ndx = 0; ndx < 3; ndx++)
+            QVector<triangle>::iterator   viter = m_triangles.begin();
+
+            while (m_triangles.end() != viter)
             {
-              m_pScene->addLine(((*viter).pt(ndx).x())* m_scale + 0.5f * m_imageWidth, (-(*viter).pt(ndx).y()) * m_scale + 0.5f * m_imageHeight,
+              for (uint8_t ndx = 0; ndx < 3; ndx++)
+              {
+                m_pScene->addLine(((*viter).pt(ndx).x())* m_scale + 0.5f * m_imageWidth, (-(*viter).pt(ndx).y()) * m_scale + 0.5f * m_imageHeight,
                                 ((*viter).pt((ndx+1)%3).x()) * m_scale + 0.5f * m_imageWidth, (-(*viter).pt((ndx + 1)%3).y()) * m_scale + 0.5f * m_imageHeight,
-                                linePen);
+                                m_triPen);
+              }
+              viter++;
             }
-            viter++;
           }
         }
+
 
         // draw the voronoi cells
-        if (m_cells.size() > 0)
+        if (m_bShowVoronoi)
         {
-          for (seg* s : m_cells)
+          if (m_cells.size() > 0)
           {
-            m_pScene->addLine(s->start.x() * m_scale + 0.5f*m_imageWidth, -s->start.y()*m_scale + 0.5f*m_imageHeight,
+            for (seg* s : m_cells)
+            {
+              m_pScene->addLine(s->start.x() * m_scale + 0.5f*m_imageWidth, -s->start.y()*m_scale + 0.5f*m_imageHeight,
                               s->end.x()* m_scale + 0.5f*m_imageWidth, -s->end.y()*m_scale + 0.5f*m_imageHeight,
-                              linePen);
+                              m_vorPen);
+            }
           }
         }
 
-        // draw polygon
-        int vextexCnt = m_vertexList.size();
-        if (vextexCnt > 0)
-        {
-            for (int ndx = 0; ndx < vextexCnt; ndx++)
-            {
-                CPoint ptHead = m_vertexList.at(ndx);
-                CPoint ptTail = m_vertexList.at((ndx + 1)%vextexCnt);
 
-                m_pScene->addLine(ptHead.x() * m_scale + 0.5* m_imageWidth, -ptHead.y() * m_scale + 0.5* m_imageHeight, ptTail.x() * m_scale + 0.5* m_imageWidth, -ptTail.y() * m_scale + 0.5* m_imageHeight, linePen);
-            }
+        // draw polygon
+        if (m_bShowConvexHull)
+        {
+          int vextexCnt = m_vertexList.size();
+          if (vextexCnt > 0)
+          {
+              for (int ndx = 0; ndx < vextexCnt; ndx++)
+              {
+                  CPoint ptHead = m_vertexList.at(ndx);
+                  CPoint ptTail = m_vertexList.at((ndx + 1)%vextexCnt);
+
+                  m_pScene->addLine(ptHead.x() * m_scale + 0.5* m_imageWidth, -ptHead.y() * m_scale + 0.5* m_imageHeight, ptTail.x() * m_scale + 0.5* m_imageWidth, -ptTail.y() * m_scale + 0.5* m_imageHeight, m_chPen);
+              }
+          }
         }
+
         
         m_graphicsView->setScene(m_pScene);
         m_graphicsView->show();
     }
+}
+
+
+float_t ComGeo::getDefaultPointSize()
+{
+  float_t delta = 0.0500;
+
+  float_t minExtents = std::min((std::get<1>(m_extents) - std::get<0>(m_extents)), (std::get<3>(m_extents) - std::get<2>(m_extents)));
+
+  if (minExtents >= 20) delta = 2.00f;
+  else if ((minExtents >= 15) && (minExtents < 20)) delta = 1.0f;
+  else if ((minExtents >= 10) && (minExtents < 15)) delta = 0.75f;
+  else if ((minExtents >= 5) && (minExtents < 10)) delta = 0.50f;
+  else if ((minExtents >= 1) && (minExtents < 5)) delta = 0.10;
+  else delta = 0.05;
+
+  return delta;
 }

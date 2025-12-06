@@ -81,6 +81,9 @@
     <ClCompile Include="voronoi.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ptSizeDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="ComGeo.h">
@@ -93,6 +96,9 @@
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="dlgViewData.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="ptSizeDlg.h">
       <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>
